@@ -70,6 +70,7 @@ class ComposeCallScreenMediator(private val activity: WebRtcCallActivity, viewMo
 
     activity.setContent {
       val recipient by viewModel.getRecipientFlow().collectAsStateWithLifecycle(Recipient.UNKNOWN)
+      val lkRoom by viewModel.getLkRoom().collectAsStateWithLifecycle(null)
       val webRtcCallState by callScreenViewModel.callState.collectAsStateWithLifecycle()
       val callScreenState by callScreenViewModel.callScreenState.collectAsStateWithLifecycle()
       val callControlsState by viewModel.getCallControlsState().collectAsStateWithLifecycle(CallControlsState())
@@ -165,7 +166,8 @@ class ComposeCallScreenMediator(private val activity: WebRtcCallActivity, viewMo
           onNavigationClick = { activity.onBackPressedDispatcher.onBackPressed() },
           onLocalPictureInPictureClicked = viewModel::onLocalPictureInPictureClicked,
           onControlsToggled = onControlsToggled,
-          onCallScreenDialogDismissed = { callScreenViewModel.dialog.update { CallScreenDialogType.NONE } }
+          onCallScreenDialogDismissed = { callScreenViewModel.dialog.update { CallScreenDialogType.NONE } },
+          lkRoom = lkRoom
         )
       }
     }

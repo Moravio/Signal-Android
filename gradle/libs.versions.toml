@@ -179,6 +179,7 @@ dnsjava = "dnsjava:dnsjava:2.1.9"
 nanohttpd-webserver = { module = "org.nanohttpd:nanohttpd-webserver", version.ref = "nanohttpd" }
 nanohttpd-websocket = { module = "org.nanohttpd:nanohttpd-websocket", version.ref = "nanohttpd" }
 kotlinx-collections-immutable = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5"
+livekit-lib = { module = "io.livekit:livekit-android", version = "2.20.2" }
 
 # Can't use the newest version because it hits some weird NoClassDefFoundException
 jknack-handlebars = "com.github.jknack:handlebars:4.0.7"

@@ -1,6 +1,7 @@
 package org.thoughtcrime.securesms.events
 
 import com.annimon.stream.OptionalLong
+import io.livekit.android.room.Room
 import org.signal.ringrtc.GroupCall.GroupCallEndReason
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink
 import org.thoughtcrime.securesms.events.CallParticipant.Companion.createLocal
@@ -107,6 +108,8 @@ class WebRtcViewModel(state: WebRtcServiceState) {
   val callLinkDisconnectReason: CallLinkDisconnectReason? = state.callInfoState.callLinkDisconnectReason
   val groupCallEndReason: GroupCallEndReason? = state.callInfoState.groupCallEndReason
   val groupCallSpeechEvent: GroupCallSpeechEvent? = state.callInfoState.groupCallSpeechEvent
+
+  val lkRoom: Room? = state.callInfoState.lkRoom
 
   @get:JvmName("hasAtLeastOneRemote")
   val hasAtLeastOneRemote = if (state.callInfoState.callRecipient.isIndividual) {

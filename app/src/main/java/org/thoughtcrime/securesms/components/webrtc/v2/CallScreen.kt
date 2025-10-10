@@ -63,6 +63,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import io.livekit.android.room.Room
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.signal.core.ui.compose.BottomSheets
@@ -118,7 +119,8 @@ fun CallScreen(
   onNavigationClick: () -> Unit,
   onLocalPictureInPictureClicked: () -> Unit,
   onControlsToggled: (Boolean) -> Unit,
-  onCallScreenDialogDismissed: () -> Unit = {}
+  onCallScreenDialogDismissed: () -> Unit = {},
+  lkRoom: Room? = null
 ) {
   if (webRtcCallState == WebRtcViewModel.State.CALL_INCOMING) {
     IncomingCallScreen(
@@ -228,22 +230,28 @@ fun CallScreen(
         label = "animate-as-state"
       )
 
-      Viewport(
-        localParticipant = localParticipant,
-        localRenderState = localRenderState,
-        webRtcCallState = webRtcCallState,
-        callParticipantsPagerState = callParticipantsPagerState,
-        overflowParticipants = overflowParticipants,
-        scaffoldState = scaffoldState,
-        callControlsState = callControlsState,
-        callScreenState = callScreenState,
-        onPipClick = onLocalPictureInPictureClicked,
-        onControlsToggled = onControlsToggled,
-        callScreenController = callScreenController,
-        modifier = if (isPortrait) {
-          Modifier.padding(bottom = padding)
-        } else Modifier
-      )
+      if (lkRoom != null && lkRoom.state == Room.State.CONNECTED) {
+        // Example of call UI change based on lkRoom
+        Text(text = "LiveKit Room")
+      } else {
+        Viewport(
+          localParticipant = localParticipant,
+          localRenderState = localRenderState,
+          webRtcCallState = webRtcCallState,
+          callParticipantsPagerState = callParticipantsPagerState,
+          overflowParticipants = overflowParticipants,
+          scaffoldState = scaffoldState,
+          callControlsState = callControlsState,
+          callScreenState = callScreenState,
+          onPipClick = onLocalPictureInPictureClicked,
+          onControlsToggled = onControlsToggled,
+          callScreenController = callScreenController,
+          modifier = if (isPortrait) {
+            Modifier.padding(bottom = padding)
+          } else Modifier
+        )
+      }
+
 
       CallScreenReactionsContainer(
         reactions = reactions,

@@ -79,6 +79,8 @@ interface CallScreenMediator {
 
   companion object {
     fun create(activity: WebRtcCallActivity, viewModel: WebRtcCallViewModel): CallScreenMediator {
+      return ComposeCallScreenMediator(activity, viewModel);
+
       return if (RemoteConfig.newCallUi || (RemoteConfig.internalUser && SignalStore.internal.newCallingUi)) {
         ComposeCallScreenMediator(activity, viewModel)
       } else {

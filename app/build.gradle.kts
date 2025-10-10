@@ -605,6 +605,8 @@ dependencies {
   implementation(libs.androidx.credentials)
   implementation(libs.androidx.credentials.compat)
   implementation(libs.kotlinx.serialization.json)
+  implementation(libs.livekit.lib)
+
 
   implementation(project(":billing"))
 

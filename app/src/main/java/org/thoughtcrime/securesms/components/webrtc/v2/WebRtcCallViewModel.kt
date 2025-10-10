@@ -10,6 +10,7 @@ import android.os.Looper
 import androidx.annotation.MainThread
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.livekit.android.room.Room
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -65,7 +66,7 @@ class WebRtcCallViewModel : ViewModel() {
   private val canEnterPipMode = MutableStateFlow(false)
   private val ephemeralState = MutableStateFlow<WebRtcEphemeralState?>(null)
   private val remoteMutesReported = MutableStateFlow(HashSet<CallParticipantId>())
-
+  private val lkRoom = MutableStateFlow<Room?>(null)
   private val controlsWithFoldableState: Flow<WebRtcControls> = combine(foldableState, webRtcControls, this::updateControlsFoldableState)
   private val realWebRtcControls: StateFlow<WebRtcControls> = combine(isInPipMode, controlsWithFoldableState, this::getRealWebRtcControls)
     .stateIn(viewModelScope, SharingStarted.Eagerly, WebRtcControls.NONE)
@@ -136,6 +137,10 @@ class WebRtcCallViewModel : ViewModel() {
 
   fun getEvents(): Flow<CallEvent> {
     return events
+  }
+
+  fun getLkRoom(): Flow<Room?> {
+    return lkRoom
   }
 
   fun getInCallStatus(): Flow<InCallStatus> {
@@ -275,6 +280,8 @@ class WebRtcCallViewModel : ViewModel() {
 
   @MainThread
   fun updateFromWebRtcViewModel(webRtcViewModel: WebRtcViewModel, enableVideo: Boolean) {
+    lkRoom.value = webRtcViewModel.lkRoom
+
     canEnterPipMode.value = !webRtcViewModel.state.isPreJoinOrNetworkUnavailable
     if (isCallStarting && webRtcViewModel.state.isPassedPreJoin) {
       isCallStarting = false

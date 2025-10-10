@@ -29,6 +29,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import io.livekit.android.LiveKit;
+import io.livekit.android.room.Room;
+
 /**
  * Builder that creates a new {@link WebRtcServiceState} from an existing one and allows
  * changes to all normally immutable data.
@@ -389,6 +392,11 @@ public class WebRtcServiceStateBuilder {
 
     public @NonNull CallInfoStateBuilder setGroupCallSpeechEvent(@Nullable GroupCallSpeechEvent groupCallSpeechEvent) {
       toBuild.setGroupCallSpeechEvent(groupCallSpeechEvent);
+      return this;
+    }
+
+    public @NonNull CallInfoStateBuilder lkRoom(@Nullable Room lkRoom) {
+      toBuild.setLkRoom(lkRoom);
       return this;
     }
   }
