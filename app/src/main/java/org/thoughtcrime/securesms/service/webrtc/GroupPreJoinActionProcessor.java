@@ -10,7 +10,8 @@ import org.signal.ringrtc.GroupCall;
 import org.signal.ringrtc.PeekInfo;
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink;
 import org.thoughtcrime.securesms.components.webrtc.EglBaseWrapper;
-import org.thoughtcrime.securesms.components.webrtc.livekit.HMorphGroupCall;
+import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall
+    ;
 import org.thoughtcrime.securesms.events.CallParticipant;
 import org.thoughtcrime.securesms.events.CallParticipantId;
 import org.thoughtcrime.securesms.events.WebRtcViewModel;
@@ -25,15 +26,9 @@ import org.whispersystems.signalservice.api.push.ServiceId.ACI;
 
 import java.util.List;
 
-import io.livekit.android.ConnectOptions;
 import io.livekit.android.LiveKit;
 import io.livekit.android.LiveKitOverrides;
 import io.livekit.android.RoomOptions;
-import kotlin.coroutines.EmptyCoroutineContext;
-import kotlinx.coroutines.BuildersKt;
-import kotlinx.coroutines.CoroutineStart;
-import kotlinx.coroutines.Dispatchers;
-import kotlinx.coroutines.GlobalScope;
 
 import static org.thoughtcrime.securesms.webrtc.CallNotificationBuilder.TYPE_OUTGOING_RINGING;
 
@@ -79,13 +74,13 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
-    var lkRoom = LiveKit.INSTANCE.create(context.getApplicationContext(), new RoomOptions(), new LiveKitOverrides());
+//    var lkRoom = LiveKit.INSTANCE.create(context.getApplicationContext(), new RoomOptions(), new LiveKitOverrides());
 
     SignalStore.tooltips().markGroupCallingLobbyEntered();
     return currentState.builder()
                        .changeCallInfoState()
                        .groupCall(groupCall)
-                       .lkRoom(lkRoom)
+//                       .lkRoom(lkRoom)
                        .groupCallState(WebRtcViewModel.GroupCallState.DISCONNECTED)
                        .activePeer(new RemotePeer(currentState.getCallInfoState().getCallRecipient().getId(), RemotePeer.GROUP_CALL_ID))
                        .build();
@@ -192,9 +187,9 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to join group call", e);
     }
 
-    var lkRoom = currentState.getCallInfoState().requireLkRoom();
+//    var lkRoom = currentState.getCallInfoState().requireLkRoom();
 
-    new HMorphGroupCall(lkRoom).connect();
+//    new FHEGroupCall(lkRoom).connect(false);
 
     return currentState.builder()
                        .actionProcessor(actionProcessorFactory.createJoiningActionProcessor(webRtcInteractor))

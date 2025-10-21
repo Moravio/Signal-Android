@@ -11,6 +11,7 @@ import org.signal.ringrtc.CallManager;
 import org.signal.ringrtc.GroupCall;
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink;
 import org.thoughtcrime.securesms.components.webrtc.EglBaseWrapper;
+import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.events.CallParticipant;
@@ -29,6 +30,10 @@ import org.thoughtcrime.securesms.webrtc.locks.LockManager;
 import org.whispersystems.signalservice.api.push.ServiceId.ACI;
 
 import java.util.Optional;
+
+import io.livekit.android.LiveKit;
+import io.livekit.android.LiveKitOverrides;
+import io.livekit.android.RoomOptions;
 
 import static org.thoughtcrime.securesms.webrtc.CallNotificationBuilder.TYPE_INCOMING_CONNECTING;
 import static org.thoughtcrime.securesms.webrtc.CallNotificationBuilder.TYPE_INCOMING_RINGING;
@@ -204,6 +209,8 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
+//    var lkRoom = LiveKit.INSTANCE.create(context.getApplicationContext(), new RoomOptions(), new LiveKitOverrides());
+
     currentState = currentState.builder()
                                .changeCallInfoState()
                                .groupCall(groupCall)
@@ -228,6 +235,8 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
     } catch (CallException e) {
       return groupCallFailure(currentState, "Unable to join group call", e);
     }
+
+//    new FHEGroupCall(lkRoom).connect(true);
 
     return currentState.builder()
                        .actionProcessor(MultiPeerActionProcessorFactory.GroupActionProcessorFactory.INSTANCE.createJoiningActionProcessor(webRtcInteractor))

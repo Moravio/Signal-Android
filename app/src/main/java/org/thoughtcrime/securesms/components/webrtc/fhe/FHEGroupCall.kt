@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-package org.thoughtcrime.securesms.components.webrtc.livekit
+package org.thoughtcrime.securesms.components.webrtc.fhe
 
+import android.R
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -26,8 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 
-class HMorphGroupCall(private val room: Room) {
-  val TAG: String = Log.tag(HMorphGroupCall::class.java)
+class FHEGroupCall(private val room: Room) {
+  val TAG: String = Log.tag(FHEGroupCall::class.java)
 
   private var recordJob: Job? = null
 
@@ -39,10 +40,12 @@ class HMorphGroupCall(private val room: Room) {
 
   private val channels: Int = 1
 
-  fun connect()
+  fun connect(recipient: Boolean = false)
   {
     val url = "wss://sandbox-rbbg1evh.livekit.cloud"
-    val token = "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6Im1vcmF2aW8tc2lnbmFsIn0sImlzcyI6IkFQSUs3cWhScnFHY2ttUyIsImV4cCI6MTc2MDEwMTYyOCwibmJmIjowLCJzdWIiOiJtb2JpbGUifQ.WjHJYjZchPGim-rkeD0rRxMZeJ7k5htRhs8K7py3a6s"
+    val token = if (recipient)
+      "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6Im1vcmF2aW8tc2lnbmFsIn0sImlzcyI6IkFQSUs3cWhScnFHY2ttUyIsImV4cCI6MTc2MDk3MDc4MywibmJmIjowLCJzdWIiOiJtb2JpbGUifQ.pTX2XmbwlCRXGL1Pbg2Lob9_-dfaKpEOGA7qfyusfwQ"
+      else "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6Im1vcmF2aW8tc2lnbmFsIn0sImlzcyI6IkFQSUs3cWhScnFHY2ttUyIsImV4cCI6MTc2MDk3MDc4MywibmJmIjowLCJzdWIiOiJtb2JpbGUifQ.pTX2XmbwlCRXGL1Pbg2Lob9_-dfaKpEOGA7qfyusfwQ"
 
     runBlocking {
       room.connect(url = url, token = token)
@@ -56,7 +59,6 @@ class HMorphGroupCall(private val room: Room) {
         Log.i(TAG, "LP event ${event}")
       }
     }
-
 
     val pcmReassembler = PcmReassembler()
     val player = PcmPlayer(receiveScope)

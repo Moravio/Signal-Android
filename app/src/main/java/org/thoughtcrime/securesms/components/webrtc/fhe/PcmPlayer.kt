@@ -1,4 +1,4 @@
-package org.thoughtcrime.securesms.components.webrtc.livekit
+package org.thoughtcrime.securesms.components.webrtc.fhe
 
 import android.annotation.SuppressLint
 import android.media.AudioAttributes

@@ -230,10 +230,10 @@ fun CallScreen(
         label = "animate-as-state"
       )
 
-      if (lkRoom != null && lkRoom.state == Room.State.CONNECTED) {
-        // Example of call UI change based on lkRoom
-        Text(text = "LiveKit Room")
-      } else {
+//      if (lkRoom != null && lkRoom.state == Room.State.CONNECTED) {
+//        // Example of call UI change based on lkRoom
+//        Text(text = "LiveKit Room")
+//      } else {
         Viewport(
           localParticipant = localParticipant,
           localRenderState = localRenderState,
@@ -250,7 +250,7 @@ fun CallScreen(
             Modifier.padding(bottom = padding)
           } else Modifier
         )
-      }
+//      }
 
 
       CallScreenReactionsContainer(

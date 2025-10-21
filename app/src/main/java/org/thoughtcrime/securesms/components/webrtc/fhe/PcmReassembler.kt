@@ -1,4 +1,4 @@
-package org.thoughtcrime.securesms.components.webrtc.livekit
+package org.thoughtcrime.securesms.components.webrtc.fhe
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
