@@ -11,7 +11,6 @@ import org.signal.core.util.gibiBytes
 import org.signal.core.util.kibiBytes
 import org.signal.core.util.logging.Log
 import org.signal.core.util.mebiBytes
-import org.signal.libsignal.protocol.UsePqRatchet
 import org.thoughtcrime.securesms.dependencies.AppDependencies
 import org.thoughtcrime.securesms.groups.SelectionLimits
 import org.thoughtcrime.securesms.jobs.RemoteConfigRefreshJob
@@ -1165,16 +1164,6 @@ object RemoteConfig {
     durationUnit = DurationUnit.DAYS
   )
 
-  /** Whether or not to use the new post-quantum ratcheting. */
-  @JvmStatic
-  @get:JvmName("usePqRatchet")
-  val usePqRatchet: UsePqRatchet by remoteValue(
-    key = "android.usePqRatchet",
-    hotSwappable = false
-  ) { value ->
-    if (value.asBoolean(false)) UsePqRatchet.YES else UsePqRatchet.NO
-  }
-
   /** The maximum allowed envelope size for messages we send. */
   @JvmStatic
   @get:JvmName("maxEnvelopeSizeBytes")
@@ -1192,5 +1181,12 @@ object RemoteConfig {
     hotSwappable = true
   )
 
+  @JvmStatic
+  @get:JvmName("receivePolls")
+  val receivePolls: Boolean by remoteBoolean(
+    key = "android.receivePolls",
+    defaultValue = false,
+    hotSwappable = true
+  )
   // endregion
 }

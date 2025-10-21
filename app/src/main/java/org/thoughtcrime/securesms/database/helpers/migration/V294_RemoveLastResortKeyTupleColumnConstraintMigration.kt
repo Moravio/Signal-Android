@@ -14,7 +14,7 @@ import org.thoughtcrime.securesms.database.SQLiteDatabase
 @Suppress("ClassName")
 object V294_RemoveLastResortKeyTupleColumnConstraintMigration : SignalDatabaseMigration {
   override fun migrate(context: Application, db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-    db.execSQL("DROP TABLE last_resort_key_tuple")
+    db.execSQL("DROP TABLE IF EXISTS last_resort_key_tuple")
 
     db.execSQL(
       """
@@ -25,7 +25,7 @@ object V294_RemoveLastResortKeyTupleColumnConstraintMigration : SignalDatabaseMi
         public_key BLOB NOT NULL,
         UNIQUE(kyber_prekey_id, signed_key_id, public_key)
       )
-      """.trimIndent()
+      """
     )
   }
 }
