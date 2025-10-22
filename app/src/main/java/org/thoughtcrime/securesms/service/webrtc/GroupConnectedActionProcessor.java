@@ -239,7 +239,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
     Log.i(tag, "handleLocalHangup():");
 
     GroupCall groupCall = currentState.getCallInfoState().requireGroupCall();
-    currentState.getCallInfoState().requireLkRoom().disconnect();
+    currentState.getCallInfoState().requireFheGroupCall().disconnect();
 
     try {
       groupCall.disconnect();

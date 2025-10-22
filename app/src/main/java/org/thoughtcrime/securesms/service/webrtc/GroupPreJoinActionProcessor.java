@@ -26,10 +26,6 @@ import org.whispersystems.signalservice.api.push.ServiceId.ACI;
 
 import java.util.List;
 
-import io.livekit.android.LiveKit;
-import io.livekit.android.LiveKitOverrides;
-import io.livekit.android.RoomOptions;
-
 import static org.thoughtcrime.securesms.webrtc.CallNotificationBuilder.TYPE_OUTGOING_RINGING;
 
 /**
@@ -74,13 +70,13 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
-//    var lkRoom = LiveKit.INSTANCE.create(context.getApplicationContext(), new RoomOptions(), new LiveKitOverrides());
+    var fheGroupCall = new FHEGroupCall(context);
 
     SignalStore.tooltips().markGroupCallingLobbyEntered();
     return currentState.builder()
                        .changeCallInfoState()
                        .groupCall(groupCall)
-//                       .lkRoom(lkRoom)
+                       .fheGroupCall(fheGroupCall)
                        .groupCallState(WebRtcViewModel.GroupCallState.DISCONNECTED)
                        .activePeer(new RemotePeer(currentState.getCallInfoState().getCallRecipient().getId(), RemotePeer.GROUP_CALL_ID))
                        .build();
@@ -187,9 +183,9 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to join group call", e);
     }
 
-//    var lkRoom = currentState.getCallInfoState().requireLkRoom();
+    var fheGroupCall = currentState.getCallInfoState().requireFheGroupCall();
 
-//    new FHEGroupCall(lkRoom).connect(false);
+    fheGroupCall.connect(false);
 
     return currentState.builder()
                        .actionProcessor(actionProcessorFactory.createJoiningActionProcessor(webRtcInteractor))

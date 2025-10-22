@@ -66,7 +66,7 @@ class WebRtcCallViewModel : ViewModel() {
   private val canEnterPipMode = MutableStateFlow(false)
   private val ephemeralState = MutableStateFlow<WebRtcEphemeralState?>(null)
   private val remoteMutesReported = MutableStateFlow(HashSet<CallParticipantId>())
-  private val lkRoom = MutableStateFlow<Room?>(null)
+//  private val lkRoom = MutableStateFlow<Room?>(null)
   private val controlsWithFoldableState: Flow<WebRtcControls> = combine(foldableState, webRtcControls, this::updateControlsFoldableState)
   private val realWebRtcControls: StateFlow<WebRtcControls> = combine(isInPipMode, controlsWithFoldableState, this::getRealWebRtcControls)
     .stateIn(viewModelScope, SharingStarted.Eagerly, WebRtcControls.NONE)
@@ -139,9 +139,9 @@ class WebRtcCallViewModel : ViewModel() {
     return events
   }
 
-  fun getLkRoom(): Flow<Room?> {
-    return lkRoom
-  }
+//  fun getLkRoom(): Flow<Room?> {
+//    return lkRoom
+//  }
 
   fun getInCallStatus(): Flow<InCallStatus> {
     val elapsedTime: Flow<Long> = elapsed.map { timeInCall -> if (callConnectedTime == -1L) -1L else timeInCall }
@@ -280,7 +280,7 @@ class WebRtcCallViewModel : ViewModel() {
 
   @MainThread
   fun updateFromWebRtcViewModel(webRtcViewModel: WebRtcViewModel, enableVideo: Boolean) {
-    lkRoom.value = webRtcViewModel.lkRoom
+//    lkRoom.value = webRtcViewModel.lkRoom
 
     canEnterPipMode.value = !webRtcViewModel.state.isPreJoinOrNetworkUnavailable
     if (isCallStarting && webRtcViewModel.state.isPassedPreJoin) {

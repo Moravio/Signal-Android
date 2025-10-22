@@ -1,10 +1,10 @@
 package org.thoughtcrime.securesms.service.webrtc.state
 
 import com.annimon.stream.OptionalLong
-import io.livekit.android.room.Room
 import org.signal.ringrtc.CallId
 import org.signal.ringrtc.GroupCall
 import org.signal.ringrtc.GroupCall.GroupCallEndReason
+import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall
 import org.thoughtcrime.securesms.events.CallParticipant
 import org.thoughtcrime.securesms.events.CallParticipantId
 import org.thoughtcrime.securesms.events.GroupCallSpeechEvent
@@ -36,7 +36,7 @@ data class CallInfoState(
   var callLinkDisconnectReason: CallLinkDisconnectReason? = null,
   var groupCallEndReason: GroupCallEndReason? = null,
   var groupCallSpeechEvent: GroupCallSpeechEvent? = null,
-  var lkRoom: Room? = null
+  var fheGroupCall: FHEGroupCall? = null
 ) {
 
   val remoteCallParticipants: List<CallParticipant>
@@ -72,7 +72,7 @@ data class CallInfoState(
     identityChangedRecipients = identityChangedRecipients.toMutableSet()
   )
 
-  fun requireLkRoom(): Room {
-    return lkRoom!!
+  fun requireFheGroupCall(): FHEGroupCall {
+    return fheGroupCall!!
   }
 }

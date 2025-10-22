@@ -120,7 +120,7 @@ fun CallScreen(
   onLocalPictureInPictureClicked: () -> Unit,
   onControlsToggled: (Boolean) -> Unit,
   onCallScreenDialogDismissed: () -> Unit = {},
-  lkRoom: Room? = null
+//  lkRoom: Room? = null
 ) {
   if (webRtcCallState == WebRtcViewModel.State.CALL_INCOMING) {
     IncomingCallScreen(

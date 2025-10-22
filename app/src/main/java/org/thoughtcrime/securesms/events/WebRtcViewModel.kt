@@ -109,7 +109,7 @@ class WebRtcViewModel(state: WebRtcServiceState) {
   val groupCallEndReason: GroupCallEndReason? = state.callInfoState.groupCallEndReason
   val groupCallSpeechEvent: GroupCallSpeechEvent? = state.callInfoState.groupCallSpeechEvent
 
-  val lkRoom: Room? = state.callInfoState.lkRoom
+//  val lkRoom: Room? = state.callInfoState.lkRoom
 
   @get:JvmName("hasAtLeastOneRemote")
   val hasAtLeastOneRemote = if (state.callInfoState.callRecipient.isIndividual) {

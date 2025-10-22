@@ -11,6 +11,7 @@ import org.signal.ringrtc.GroupCall;
 import org.thoughtcrime.securesms.components.sensors.Orientation;
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink;
 import org.thoughtcrime.securesms.components.webrtc.EglBaseWrapper;
+import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall;
 import org.thoughtcrime.securesms.events.CallParticipant;
 import org.thoughtcrime.securesms.events.CallParticipantId;
 import org.thoughtcrime.securesms.events.GroupCallSpeechEvent;
@@ -28,9 +29,6 @@ import org.webrtc.PeerConnection;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import io.livekit.android.LiveKit;
-import io.livekit.android.room.Room;
 
 /**
  * Builder that creates a new {@link WebRtcServiceState} from an existing one and allows
@@ -395,8 +393,8 @@ public class WebRtcServiceStateBuilder {
       return this;
     }
 
-    public @NonNull CallInfoStateBuilder lkRoom(@Nullable Room lkRoom) {
-      toBuild.setLkRoom(lkRoom);
+    public @NonNull CallInfoStateBuilder fheGroupCall(@Nullable FHEGroupCall fheGroupCall) {
+      toBuild.setFheGroupCall(fheGroupCall);
       return this;
     }
   }

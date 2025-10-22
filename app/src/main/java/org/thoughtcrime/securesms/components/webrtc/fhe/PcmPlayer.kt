@@ -8,22 +8,18 @@ import kotlinx.coroutines.*
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.max
 
-class PcmPlayer(parentScope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
+class PcmPlayer {
   private val queue = LinkedBlockingQueue<Pair<ByteArray, Meta>>()
 
   private var track: AudioTrack? = null
 
   private var job: Job? = null
 
-  private val scope = parentScope
-
   data class Meta(val sampleRate: Int, val channels: Int)
 
   @SuppressLint("NewApi")
-  fun start() {
-    if (job != null) return
-
-    job = scope.launch {
+  suspend fun start() = coroutineScope {
+    job = launch {
       while (isActive) {
         val (pcm, meta) = queue.take()
         ensureTrack(meta)
