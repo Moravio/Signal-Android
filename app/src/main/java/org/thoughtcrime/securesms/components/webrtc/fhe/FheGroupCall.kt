@@ -6,9 +6,6 @@
 package org.thoughtcrime.securesms.components.webrtc.fhe
 
 import android.content.Context
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
 import io.livekit.android.LiveKit
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
@@ -17,7 +14,6 @@ import io.livekit.android.room.RoomException
 import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -26,27 +22,26 @@ import org.signal.core.util.logging.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.max
 import kotlin.math.min
 
-class FHEGroupCall(val context: Context) {
-  val TAG: String = Log.tag(FHEGroupCall::class.java)
+class FheGroupCall(val context: Context) {
+  private val TAG: String = Log.tag(FheGroupCall::class.java)
 
-  private var record: AudioRecord? = null
+  private val sampleRate = 48000
 
-  private val sampleRate: Int = 48000
+  private val channels = 1
 
-  private val frameMs: Int = 20
+  private val room = LiveKit.create(context)
 
-  private val channels: Int = 1
+  private val recorder = PcmRecorder(sampleRate, channels)
 
-  private val room: Room
+  private val pcmReassembler = PcmReassembler()
+
+  private val player = PcmPlayer()
+
+  private val scope = CoroutineScope(Dispatchers.IO)
 
   val seq = AtomicInteger(0)
-
-  init {
-    room = LiveKit.create(context)
-  }
 
   fun connect(recipient: Boolean = false)
   {
@@ -59,20 +54,11 @@ class FHEGroupCall(val context: Context) {
       room.connect(url = url, token = token)
     }
 
-    val scope = CoroutineScope(Dispatchers.IO)
-
-    val pcmReassembler = PcmReassembler()
-    val player = PcmPlayer()
+    startRecording()
 
     scope.launch {
       launch {
         player.start()
-      }
-
-      val job = launch {
-        startRecording {
-            pcmFrame -> sendPcm(pcmFrame)
-        }
       }
 
       launch {
@@ -104,7 +90,6 @@ class FHEGroupCall(val context: Context) {
         if (event is RoomEvent.Disconnected) {
           Log.i(TAG, "Disconnected")
 
-          job.cancel()
           player.stop()
           stopRecording()
         }
@@ -112,52 +97,30 @@ class FHEGroupCall(val context: Context) {
     }
   }
 
+  private fun startRecording()
+  {
+    scope.launch {
+      recorder.start { pcm -> sendPcm(pcm) }
+    }
+  }
+
+  private fun stopRecording()
+  {
+    recorder.stop()
+  }
+
+  fun setOutgoingAudioMuted(muted: Boolean)
+  {
+    if (muted) {
+      stopRecording();
+    } else {
+      startRecording()
+    }
+  }
+
   fun disconnect()
   {
     room.disconnect()
-  }
-
-  suspend fun startRecording(onPcm: suspend (ByteArray) -> Unit) = coroutineScope {
-    stopRecording()
-
-    val minBuf = AudioRecord.getMinBufferSize(
-      sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
-    )
-
-    val bytesPerFrame = sampleRate * frameMs / 1000 * channels * 2
-    val bufferSize = max(minBuf, bytesPerFrame * 2)
-
-    record = AudioRecord(
-      MediaRecorder.AudioSource.MIC,
-      sampleRate,
-      if(channels == 1) AudioFormat.CHANNEL_IN_MONO else AudioFormat.CHANNEL_IN_STEREO,
-      AudioFormat.ENCODING_PCM_16BIT,
-      bufferSize
-    )
-
-    record?.startRecording()
-
-    val buf = ByteArray(bytesPerFrame)
-
-    launch {
-      while (isActive) {
-        val n = record?.read(buf, 0, buf.size)
-
-        if (n != null && n > 0) {
-          onPcm(if (n == buf.size) buf else buf.copyOf(n))
-        }
-      }
-    }
-  }
-
-  fun stopRecording() {
-    record?.run {
-      try { stop() } catch (_: Throwable) {}
-
-      release()
-    }
-
-    record = null
   }
 
   suspend fun sendPcm(pcm: ByteArray) {
@@ -177,7 +140,7 @@ class FHEGroupCall(val context: Context) {
         putShort(idx.toShort())
         putShort(total)
         putInt(sampleRate)
-        put(1.toByte())
+        put(channels.toByte())
       }.array()
 
       val payload = ByteArray(header.size + take)

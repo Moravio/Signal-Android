@@ -10,7 +10,7 @@ import org.signal.ringrtc.GroupCall;
 import org.signal.ringrtc.PeekInfo;
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink;
 import org.thoughtcrime.securesms.components.webrtc.EglBaseWrapper;
-import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall
+import org.thoughtcrime.securesms.components.webrtc.fhe.FheGroupCall
     ;
 import org.thoughtcrime.securesms.events.CallParticipant;
 import org.thoughtcrime.securesms.events.CallParticipantId;
@@ -70,7 +70,7 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
-    var fheGroupCall = new FHEGroupCall(context);
+    var fheGroupCall = new FheGroupCall(context);
 
     SignalStore.tooltips().markGroupCallingLobbyEntered();
     return currentState.builder()

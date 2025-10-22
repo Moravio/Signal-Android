@@ -4,7 +4,7 @@ import com.annimon.stream.OptionalLong
 import org.signal.ringrtc.CallId
 import org.signal.ringrtc.GroupCall
 import org.signal.ringrtc.GroupCall.GroupCallEndReason
-import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall
+import org.thoughtcrime.securesms.components.webrtc.fhe.FheGroupCall
 import org.thoughtcrime.securesms.events.CallParticipant
 import org.thoughtcrime.securesms.events.CallParticipantId
 import org.thoughtcrime.securesms.events.GroupCallSpeechEvent
@@ -36,7 +36,7 @@ data class CallInfoState(
   var callLinkDisconnectReason: CallLinkDisconnectReason? = null,
   var groupCallEndReason: GroupCallEndReason? = null,
   var groupCallSpeechEvent: GroupCallSpeechEvent? = null,
-  var fheGroupCall: FHEGroupCall? = null
+  var fheGroupCall: FheGroupCall? = null
 ) {
 
   val remoteCallParticipants: List<CallParticipant>
@@ -72,7 +72,7 @@ data class CallInfoState(
     identityChangedRecipients = identityChangedRecipients.toMutableSet()
   )
 
-  fun requireFheGroupCall(): FHEGroupCall {
+  fun requireFheGroupCall(): FheGroupCall {
     return fheGroupCall!!
   }
 }

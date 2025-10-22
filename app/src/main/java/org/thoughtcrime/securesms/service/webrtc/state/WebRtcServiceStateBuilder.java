@@ -5,13 +5,12 @@ import androidx.annotation.Nullable;
 
 import com.annimon.stream.OptionalLong;
 
-import org.checkerframework.checker.units.qual.N;
 import org.signal.ringrtc.CallId;
 import org.signal.ringrtc.GroupCall;
 import org.thoughtcrime.securesms.components.sensors.Orientation;
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink;
 import org.thoughtcrime.securesms.components.webrtc.EglBaseWrapper;
-import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall;
+import org.thoughtcrime.securesms.components.webrtc.fhe.FheGroupCall;
 import org.thoughtcrime.securesms.events.CallParticipant;
 import org.thoughtcrime.securesms.events.CallParticipantId;
 import org.thoughtcrime.securesms.events.GroupCallSpeechEvent;
@@ -393,7 +392,7 @@ public class WebRtcServiceStateBuilder {
       return this;
     }
 
-    public @NonNull CallInfoStateBuilder fheGroupCall(@Nullable FHEGroupCall fheGroupCall) {
+    public @NonNull CallInfoStateBuilder fheGroupCall(@Nullable FheGroupCall fheGroupCall) {
       toBuild.setFheGroupCall(fheGroupCall);
       return this;
     }

@@ -11,7 +11,7 @@ import org.signal.ringrtc.CallManager;
 import org.signal.ringrtc.GroupCall;
 import org.thoughtcrime.securesms.components.webrtc.BroadcastVideoSink;
 import org.thoughtcrime.securesms.components.webrtc.EglBaseWrapper;
-import org.thoughtcrime.securesms.components.webrtc.fhe.FHEGroupCall;
+import org.thoughtcrime.securesms.components.webrtc.fhe.FheGroupCall;
 import org.thoughtcrime.securesms.database.RecipientTable;
 import org.thoughtcrime.securesms.database.SignalDatabase;
 import org.thoughtcrime.securesms.events.CallParticipant;
@@ -194,7 +194,7 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "RingRTC did not create a group call", null);
     }
 
-    var fheGroupCall = new FHEGroupCall(context);
+    var fheGroupCall = new FheGroupCall(context);
 
     try {
       groupCall.setOutgoingAudioMuted(true);
