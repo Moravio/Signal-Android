@@ -45,8 +45,7 @@ class PcmPlayer {
 
   @SuppressLint("NewApi")
   private fun ensureTrack(meta: Meta) {
-    val chOut = if (meta.channels == 1)
-      AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO
+    val chOut = if (meta.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO
 
     val existing = track
     val needsNew = existing == null ||
@@ -69,7 +68,7 @@ class PcmPlayer {
     track = AudioTrack.Builder()
       .setAudioAttributes(
         AudioAttributes.Builder()
-          .setUsage(AudioAttributes.USAGE_MEDIA)
+          .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
           .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
           .build()
       )

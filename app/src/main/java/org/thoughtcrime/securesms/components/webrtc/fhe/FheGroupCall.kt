@@ -18,13 +18,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import okhttp3.HttpUrl
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import org.signal.core.util.logging.Log
+import org.thoughtcrime.securesms.jobs.ApkUpdateJob.UpdateDescriptor
+import org.thoughtcrime.securesms.recipients.Recipient
+import org.thoughtcrime.securesms.util.JsonUtils
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
-class FheGroupCall(val context: Context) {
+class FheGroupCall(val context: Context, val groupId: String) {
   private val TAG: String = Log.tag(FheGroupCall::class.java)
 
   private val sampleRate = 48000
@@ -43,12 +52,33 @@ class FheGroupCall(val context: Context) {
 
   val seq = AtomicInteger(0)
 
-  fun connect(recipient: Boolean = false)
+  data class TokenResponse(val url: String, val token: String)
+
+  fun connect()
   {
-    val url = "wss://sandbox-rbbg1evh.livekit.cloud"
-    val token = if (recipient)
-      "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6Im1vcmF2aW8tc2lnbmFsIn0sImlzcyI6IkFQSUs3cWhScnFHY2ttUyIsImV4cCI6MTc2MTEyNzQzNSwibmJmIjowLCJzdWIiOiJtb2JpbGUifQ.mh14M4djGs5eDs7ksKpQZOECZmdHeNq0WeeSX2nPfLw"
-      else "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6Im1vcmF2aW8tc2lnbmFsIn0sImlzcyI6IkFQSUs3cWhScnFHY2ttUyIsImV4cCI6MTc2MTEyNzQzNSwibmJmIjowLCJzdWIiOiJtb2JpbGUyIn0.77IkIYpde8wakCBf6-gvRI3AuAbytfM4flNg1t-029M"
+    val client = OkHttpClient()
+
+    val tokenUrl = HttpUrl.Builder()
+      .scheme("https")
+      .host("seven-cases-wave.loca.lt")
+      .addPathSegment("getToken")
+      .addQueryParameter("roomName", groupId)
+      .addQueryParameter("identity", Recipient.self().id.toString())
+      .build()
+
+    val request = Request.Builder()
+      .url(tokenUrl)
+      .build()
+
+    val response: String = client.newCall(request).execute().use { response ->
+      if (!response.isSuccessful || response.body == null) {
+        throw IOException("Failed to fetch LiveKit token")
+      }
+
+      response.body!!.string()
+    }
+
+    val (url, token) = JsonUtils.fromJson(response, TokenResponse::class.java)
 
     runBlocking {
       room.connect(url = url, token = token)
@@ -77,12 +107,13 @@ class FheGroupCall(val context: Context) {
 
       room.events.collect { event ->
         if (event is RoomEvent.DataReceived && event.topic == "pcm") {
-          Log.i(TAG, "Received PCM")
+//          Log.i(TAG, "Received PCM")
 
           val result = pcmReassembler.onChunk(event.data)
 
           if (result != null) {
             val (pcm, meta) = result
+
             player.enqueue(pcm, meta.sampleRate, meta.channels)
           }
         }
@@ -135,13 +166,13 @@ class FheGroupCall(val context: Context) {
 
     while (off < pcm.size) {
       val take = min(maxChunk, pcm.size - off)
-      val header = ByteBuffer.allocate(headerSize).order(ByteOrder.LITTLE_ENDIAN).apply {
-        putInt(seqId)
-        putShort(idx.toShort())
-        putShort(total)
-        putInt(sampleRate)
-        put(channels.toByte())
-      }.array()
+      val header = ByteBuffer.allocate(headerSize).order(ByteOrder.LITTLE_ENDIAN)
+        .putInt(seqId)
+        .putShort(idx.toShort())
+        .putShort(total)
+        .putInt(sampleRate)
+        .put(channels.toByte())
+        .array();
 
       val payload = ByteArray(header.size + take)
       System.arraycopy(header, 0, payload, 0, header.size)
@@ -149,7 +180,7 @@ class FheGroupCall(val context: Context) {
 
       try {
         if (room.state == Room.State.CONNECTED) {
-          Log.i(TAG, "Sending PCM")
+//          Log.i(TAG, "Sending PCM")
           room.localParticipant.publishData(data = payload, reliability = DataPublishReliability.LOSSY, topic = "pcm")
         }
       } catch (e: RoomException) {

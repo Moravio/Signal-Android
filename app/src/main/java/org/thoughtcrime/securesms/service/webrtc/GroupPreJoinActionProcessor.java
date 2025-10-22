@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.annimon.stream.Stream;
 
+import org.signal.core.util.Hex;
 import org.signal.core.util.logging.Log;
 import org.signal.ringrtc.CallException;
 import org.signal.ringrtc.GroupCall;
@@ -70,7 +71,7 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
-    var fheGroupCall = new FheGroupCall(context);
+    var fheGroupCall = new FheGroupCall(context, Hex.toStringCondensed(groupId));
 
     SignalStore.tooltips().markGroupCallingLobbyEntered();
     return currentState.builder()
@@ -185,7 +186,7 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
 
     var fheGroupCall = currentState.getCallInfoState().requireFheGroupCall();
 
-    fheGroupCall.connect(false);
+    fheGroupCall.connect();
 
     return currentState.builder()
                        .actionProcessor(actionProcessorFactory.createJoiningActionProcessor(webRtcInteractor))

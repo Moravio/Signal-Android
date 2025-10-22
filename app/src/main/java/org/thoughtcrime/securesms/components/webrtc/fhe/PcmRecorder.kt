@@ -12,12 +12,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.signal.core.util.logging.Log
 import kotlin.math.max
 
 class PcmRecorder(
   val sampleRate: Int,
   val channels: Int
 ) {
+  private val TAG: String = Log.tag(PcmRecorder::class.java)
+
   private val frameMs: Int = 20
 
   private var record: AudioRecord? = null
@@ -37,7 +40,7 @@ class PcmRecorder(
     val bufferSize = max(minBuf, bytesPerFrame * 2)
 
     record = AudioRecord(
-      MediaRecorder.AudioSource.MIC,
+      MediaRecorder.AudioSource.VOICE_COMMUNICATION,
       sampleRate,
       channelConfig,
       AudioFormat.ENCODING_PCM_16BIT,

@@ -4,6 +4,7 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 
+import org.signal.core.util.Hex;
 import org.signal.core.util.logging.Log;
 import org.signal.ringrtc.CallException;
 import org.signal.ringrtc.CallId;
@@ -194,7 +195,7 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "RingRTC did not create a group call", null);
     }
 
-    var fheGroupCall = new FheGroupCall(context);
+    var fheGroupCall = new FheGroupCall(context, Hex.toStringCondensed(groupId));
 
     try {
       groupCall.setOutgoingAudioMuted(true);
@@ -233,7 +234,7 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "Unable to join group call", e);
     }
 
-    fheGroupCall.connect(true);
+    fheGroupCall.connect();
 
     return currentState.builder()
                        .actionProcessor(MultiPeerActionProcessorFactory.GroupActionProcessorFactory.INSTANCE.createJoiningActionProcessor(webRtcInteractor))
