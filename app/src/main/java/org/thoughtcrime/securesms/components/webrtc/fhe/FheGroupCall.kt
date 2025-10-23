@@ -60,10 +60,10 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
     val tokenUrl = HttpUrl.Builder()
       .scheme("https")
-      .host("seven-cases-wave.loca.lt")
+      .host("rich-houses-march.loca.lt")
       .addPathSegment("getToken")
       .addQueryParameter("roomName", groupId)
-      .addQueryParameter("identity", Recipient.self().id.toString())
+      .addQueryParameter("identity", Recipient.self().aci.toString())
       .build()
 
     val request = Request.Builder()
