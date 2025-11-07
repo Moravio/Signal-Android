@@ -178,6 +178,8 @@ android {
   }
 
   defaultConfig {
+    manifestPlaceholders += mapOf()
+    testInstrumentationRunnerArguments += mapOf()
     versionCode = (canonicalVersionCode * maxHotfixVersions) + currentHotfixVersion
     versionName = canonicalVersionName
 
@@ -241,7 +243,8 @@ android {
     buildConfigField("boolean", "LINK_DEVICE_UX_ENABLED", "false")
 
     ndk {
-      abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+      abiFilters += listOf("arm64-v8a")
+//      abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
     }
     resourceConfigurations += listOf()
 
@@ -255,6 +258,11 @@ android {
     }
 
     testInstrumentationRunner = "org.thoughtcrime.securesms.testing.SignalTestRunner"
+    externalNativeBuild {
+      cmake {
+        cppFlags += ""
+      }
+    }
     testInstrumentationRunnerArguments["clearPackageData"] = "true"
   }
 
@@ -479,6 +487,12 @@ android {
 
   val releaseDir = "$projectDir/src/release/java"
   val debugDir = "$projectDir/src/debug/java"
+  externalNativeBuild {
+    cmake {
+      path = file("src/main/cpp/CMakeLists.txt")
+      version = "3.22.1"
+    }
+  }
 
   android.buildTypes.configureEach {
     val path = if (name == "release") releaseDir else debugDir

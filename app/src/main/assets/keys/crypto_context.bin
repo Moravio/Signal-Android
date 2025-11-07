@@ -1,0 +1,174 @@
+{
+    "value0": {
+        "polymorphic_id": 1073741824,
+        "ptr_wrapper": {
+            "id": 2147483649,
+            "data": {
+                "cereal_class_version": 1,
+                "cc": {
+                    "polymorphic_id": 2147483649,
+                    "polymorphic_name": "lbcrypto::CryptoParametersCKKSRNS",
+                    "ptr_wrapper": {
+                        "id": 2147483650,
+                        "data": {
+                            "cereal_class_version": 0,
+                            "value0": {
+                                "cereal_class_version": 0,
+                                "value0": {
+                                    "cereal_class_version": 0,
+                                    "value0": {
+                                        "cereal_class_version": 0,
+                                        "elp": {
+                                            "polymorphic_id": 1073741824,
+                                            "ptr_wrapper": {
+                                                "id": 2147483651,
+                                                "data": {
+                                                    "cereal_class_version": 1,
+                                                    "value0": {
+                                                        "cereal_class_version": 1,
+                                                        "co": 4096,
+                                                        "rd": 2048,
+                                                        "cm": {
+                                                            "cereal_class_version": 1,
+                                                            "v": [
+                                                                8796092878849
+                                                            ],
+                                                            "m": 43
+                                                        },
+                                                        "ru": {
+                                                            "v": [
+                                                                0
+                                                            ],
+                                                            "m": 0
+                                                        },
+                                                        "bm": {
+                                                            "v": [
+                                                                0
+                                                            ],
+                                                            "m": 0
+                                                        },
+                                                        "br": {
+                                                            "v": [
+                                                                0
+                                                            ],
+                                                            "m": 0
+                                                        }
+                                                    },
+                                                    "p": [
+                                                        {
+                                                            "polymorphic_id": 1073741824,
+                                                            "ptr_wrapper": {
+                                                                "id": 2147483652,
+                                                                "data": {
+                                                                    "cereal_class_version": 1,
+                                                                    "value0": {
+                                                                        "cereal_class_version": 1,
+                                                                        "co": 4096,
+                                                                        "rd": 2048,
+                                                                        "cm": {
+                                                                            "cereal_class_version": 1,
+                                                                            "v": 8796092878849
+                                                                        },
+                                                                        "ru": {
+                                                                            "v": 3022258331
+                                                                        },
+                                                                        "bm": {
+                                                                            "v": 0
+                                                                        },
+                                                                        "br": {
+                                                                            "v": 0
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "enp": {
+                                            "polymorphic_id": 1073741824,
+                                            "ptr_wrapper": {
+                                                "id": 2147483653,
+                                                "data": {
+                                                    "cereal_class_version": 1,
+                                                    "m": 42,
+                                                    "ru": {
+                                                        "v": 0
+                                                    },
+                                                    "bm": {
+                                                        "v": 0
+                                                    },
+                                                    "bru": {
+                                                        "v": 0
+                                                    },
+                                                    "g": 0,
+                                                    "bs": 1024
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "dp": 3.190000057220459,
+                                    "am": 36.0,
+                                    "ns": 1,
+                                    "rw": 0,
+                                    "nest": 0.0,
+                                    "muld": 0,
+                                    "addc": 0,
+                                    "kswc": 0,
+                                    "phops": 0,
+                                    "md": 2,
+                                    "mo": 1,
+                                    "pmo": 1,
+                                    "mmo": 1,
+                                    "exm": 0,
+                                    "dnm": 0,
+                                    "slv": 3,
+                                    "fdp": 0.0,
+                                    "ss": 30.0,
+                                    "aq": 1.0,
+                                    "tp": 1
+                                },
+                                "ks": 1,
+                                "rs": 2,
+                                "encs": 0,
+                                "muls": 1,
+                                "dnum": 1,
+                                "ab": 60,
+                                "eb": 0,
+                                "ccl": 3,
+                                "cd": 1,
+                                "rws": 64,
+                                "cdt": 0
+                            }
+                        }
+                    }
+                },
+                "kt": {
+                    "polymorphic_id": 2147483650,
+                    "polymorphic_name": "lbcrypto::SchemeCKKSRNS",
+                    "ptr_wrapper": {
+                        "id": 2147483654,
+                        "data": {
+                            "cereal_class_version": 0,
+                            "value0": {
+                                "cereal_class_version": 0,
+                                "value0": {
+                                    "cereal_class_version": 0,
+                                    "fhe": {
+                                        "polymorphic_id": 0
+                                    },
+                                    "schswitch": {
+                                        "polymorphic_id": 0
+                                    },
+                                    "enabled": 11
+                                }
+                            }
+                        }
+                    }
+                },
+                "si": 1
+            }
+        }
+    }
+}

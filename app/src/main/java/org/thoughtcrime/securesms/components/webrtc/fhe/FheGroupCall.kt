@@ -54,6 +54,10 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
   data class TokenResponse(val url: String, val token: String)
 
+  init {
+    FHEService.loadKeys(context.assets)
+  }
+
   fun connect()
   {
     val client = OkHttpClient()
