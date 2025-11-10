@@ -20,6 +20,7 @@ import org.signal.core.util.logging.Log
 import org.signal.core.util.logging.logW
 import org.signal.libsignal.messagebackup.BackupForwardSecrecyToken
 import org.signal.libsignal.net.SvrBStoreResponse
+import org.signal.libsignal.zkgroup.VerificationFailedException
 import org.signal.protos.resumableuploads.ResumableUpload
 import org.thoughtcrime.securesms.R
 import org.thoughtcrime.securesms.backup.ArchiveUploadProgress
@@ -165,6 +166,62 @@ class BackupMessagesJob private constructor(
       is NetworkResult.ApplicationError -> throw result.throwable
     }
 
+    if (SignalStore.backup.backupSecretRestoreRequired) {
+      Log.i(TAG, "[svrb-restore] First backup of re-registered account without remote restore, read remote data if available to re-init")
+
+      val forwardSecrecyMetadata: ByteArray? = when (val result = BackupRepository.getRemoteBackupForwardSecrecyMetadata()) {
+        is NetworkResult.Success -> result.result
+        is NetworkResult.NetworkError -> return Result.retry(defaultBackoff()).logW(TAG, "[svrb-restore] Network error getting remote forward secrecy metadata.", result.getCause(), true)
+        is NetworkResult.StatusCodeError -> {
+          if (result.code == 401 || result.code == 403 || result.code == 404) {
+            Log.i(TAG, "[svrb-restore] No backup data found, continuing.", true)
+            null
+          } else {
+            return Result.retry(defaultBackoff()).logW(TAG, "[svrb-restore] Status code error when getting remote forward secrecy metadata.", result.getCause(), true)
+          }
+        }
+        is NetworkResult.ApplicationError -> {
+          if (result.getCause() is VerificationFailedException) {
+            Log.w(TAG, "[svrb-restore] zkverification failed getting backup info, continuing.", true)
+            null
+          } else {
+            throw result.throwable
+          }
+        }
+      }
+
+      if (forwardSecrecyMetadata != null) {
+        when (val result = SignalNetwork.svrB.restore(auth, SignalStore.backup.messageBackupKey, forwardSecrecyMetadata)) {
+          is SvrBApi.RestoreResult.Success -> {
+            Log.i(TAG, "[svrb-restore] Remote secrecy data restored successfully.")
+            SignalStore.backup.nextBackupSecretData = result.data.nextBackupSecretData
+          }
+
+          is SvrBApi.RestoreResult.NetworkError -> {
+            Log.w(TAG, "[svrb-restore] Network error during SVRB.", result.exception)
+            return Result.retry(defaultBackoff())
+          }
+
+          is SvrBApi.RestoreResult.RestoreFailedError,
+          SvrBApi.RestoreResult.InvalidDataError -> {
+            Log.i(TAG, "[svrb-restore] Permanent SVRB error! Continuing $result")
+          }
+
+          SvrBApi.RestoreResult.DataMissingError,
+          is SvrBApi.RestoreResult.SvrError -> {
+            Log.i(TAG, "[svrb-restore] Failed to fetch SVRB data, continuing: $result")
+          }
+
+          is SvrBApi.RestoreResult.UnknownError -> {
+            Log.e(TAG, "[svrb-restore] Unknown SVRB result! Crashing.", result.throwable)
+            return Result.fatalFailure(RuntimeException(result.throwable))
+          }
+        }
+      }
+
+      SignalStore.backup.backupSecretRestoreRequired = false
+    }
+
     val backupSecretData = SignalStore.backup.nextBackupSecretData ?: run {
       Log.i(TAG, "First SVRB backup! Creating new backup chain.", true)
       val secretData = SignalNetwork.svrB.createNewBackupChain(auth, SignalStore.backup.messageBackupKey)
@@ -189,9 +246,11 @@ class BackupMessagesJob private constructor(
 
     val createKeyResult = SignalDatabase.attachments.createRemoteKeyForAttachmentsThatNeedArchiveUpload()
     if (createKeyResult.totalCount > 0) {
-      Log.w(TAG, "Needed to create remote keys. $createKeyResult", true)
       if (createKeyResult.unexpectedKeyCreation) {
+        Log.w(TAG, "Unexpected remote key creation! $createKeyResult", true)
         maybePostRemoteKeyMissingNotification()
+      } else {
+        Log.d(TAG, "Needed to create ${createKeyResult.totalCount} remote keys for quotes/stickers.")
       }
     }
     stopwatch.split("keygen")
@@ -233,6 +292,8 @@ class BackupMessagesJob private constructor(
         when (result.code) {
           413 -> {
             Log.i(TAG, "Backup file is too large! Size: ${tempBackupFile.length()} bytes", result.getCause(), true)
+            tempBackupFile.delete()
+            this.dataFile = ""
             // TODO [backup] Need to show the user an error
           }
           else -> {
@@ -397,6 +458,7 @@ class BackupMessagesJob private constructor(
 
     when (val result = ArchiveValidator.validateSignalBackup(tempBackupFile, backupKey, forwardSecrecyToken)) {
       ArchiveValidator.ValidationResult.Success -> {
+        SignalStore.backup.hasValidationError = false
         Log.d(TAG, "Successfully passed validation.", true)
       }
 
@@ -407,13 +469,19 @@ class BackupMessagesJob private constructor(
 
       is ArchiveValidator.ValidationResult.MessageValidationError -> {
         Log.w(TAG, "The backup file fails validation! Message: ${result.exception.message}, Details: ${result.messageDetails}", true)
+        tempBackupFile.delete()
+        this.dataFile = ""
+        SignalStore.backup.hasValidationError = true
         ArchiveUploadProgress.onValidationFailure()
         return BackupFileResult.Failure
       }
 
       is ArchiveValidator.ValidationResult.RecipientDuplicateE164Error -> {
         Log.w(TAG, "The backup file fails validation with a duplicate recipient! Message: ${result.exception.message}, Details: ${result.details}", true)
+        tempBackupFile.delete()
+        this.dataFile = ""
         AppDependencies.jobManager.add(E164FormattingJob())
+        SignalStore.backup.hasValidationError = true
         ArchiveUploadProgress.onValidationFailure()
         return BackupFileResult.Failure
       }
@@ -476,8 +544,10 @@ class BackupMessagesJob private constructor(
    */
   private fun Set<ArchiveAttachmentInfo>.toThumbnailMediaEntries(mediaRootBackupKey: MediaRootBackupKey): Set<BackupMediaSnapshotTable.MediaEntry> {
     return this
+      .asSequence()
       .filter { MediaUtil.isImageOrVideoType(it.contentType) }
       .filterNot { it.forQuote }
+      .filterNot { it.isWallpaper }
       .map {
         BackupMediaSnapshotTable.MediaEntry(
           mediaId = it.thumbnailMediaName.toMediaId(mediaRootBackupKey).encode(),

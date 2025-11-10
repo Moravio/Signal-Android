@@ -47,6 +47,10 @@ object ExportSkips {
     return log(sentTimestamp, "Group update record is parseable, but has no updates.")
   }
 
+  fun groupUpdateHasInvalidAuthor(sentTimestamp: Long): String {
+    return log(sentTimestamp, "Group update has an invalid author.")
+  }
+
   fun directStoryReplyHasNoBody(sentTimestamp: Long): String {
     return log(sentTimestamp, "Direct story reply has no body.")
   }
@@ -123,8 +127,28 @@ object ExportSkips {
     return log(sentTimestamp, "Poll terminate update was empty.")
   }
 
+  fun invalidPollQuestion(sentTimestamp: Long): String {
+    return log(sentTimestamp, "Poll question was invalid.")
+  }
+
+  fun invalidPollOption(sentTimestamp: Long): String {
+    return log(sentTimestamp, "Poll option was invalid.")
+  }
+
   fun individualChatUpdateInWrongTypeOfChat(sentTimestamp: Long): String {
     return log(sentTimestamp, "A chat update that only makes sense for individual chats was found in a different kind of chat.")
+  }
+
+  fun individualChatUpdateNotAuthoredBySelf(sentTimestamp: Long): String {
+    return log(sentTimestamp, "A chat update that only makes sense to be authored by self has a different author.")
+  }
+
+  fun incomingMessageAuthorDoesNotHaveAciOrE164(sentTimestamp: Long): String {
+    return log(sentTimestamp, "An incoming message author did not have an aci or e164.")
+  }
+
+  fun callWithMissingRecipient(sentTimestamp: Long): String {
+    return log(sentTimestamp, "A call had a ringer with no matching exported Recipient.")
   }
 
   private fun log(sentTimestamp: Long, message: String): String {
@@ -229,6 +253,14 @@ object ImportSkips {
 
   fun notificationProfileIdNotFound(): String {
     return log(0, "Failed to parse notificationProfileId for the provided notification profile.")
+  }
+
+  fun failedToCreateChat(): String {
+    return log(0, "Failed to create a Chat. Likely a duplicate recipient was found. Keeping pre-existing data and skipping data in this frame.")
+  }
+
+  fun missingChatRecipient(chatId: Long): String {
+    return log(0, "Missing recipient for chat $chatId")
   }
 
   private fun log(sentTimestamp: Long, message: String): String {

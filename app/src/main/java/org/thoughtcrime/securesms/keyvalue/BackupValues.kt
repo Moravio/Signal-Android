@@ -77,6 +77,7 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
     private const val KEY_NOT_ENOUGH_REMOTE_STORAGE_SPACE = "backup.not.enough.remote.storage.space"
     private const val KEY_NOT_ENOUGH_REMOTE_STORAGE_SPACE_DISPLAY_SHEET = "backup.not.enough.remote.storage.space.display.sheet"
     private const val KEY_MANUAL_NO_BACKUP_NOTIFIED = "backup.manual.no.backup.notified"
+    private const val KEY_VALIDATION_ERROR = "backup.validation.error"
 
     private const val KEY_USER_MANUALLY_SKIPPED_MEDIA_RESTORE = "backup.user.manually.skipped.media.restore"
     private const val KEY_BACKUP_EXPIRED_AND_DOWNGRADED = "backup.expired.and.downgraded"
@@ -91,6 +92,7 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
     private const val KEY_HAS_VERIFIED_BEFORE = "backup.has_verified_before"
 
     private const val KEY_NEXT_BACKUP_SECRET_DATA = "backup.next_backup_secret_data"
+    private const val KEY_BACKUP_SECRET_RESTORE_REQUIRED = "backup.backup_secret_restore_required"
 
     private const val KEY_RESTORING_VIA_QR = "backup.restore_via_qr"
 
@@ -300,6 +302,9 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
   /** True if we believe we have successfully uploaded a backup, otherwise false. */
   var hasBackupBeenUploaded: Boolean by booleanValue(KEY_BACKUP_UPLOADED, false)
 
+  /** Set when we fail to validate a user's backup during the export process */
+  var hasValidationError: Boolean by booleanValue(KEY_VALIDATION_ERROR, false)
+
   val hasBackupFailure: Boolean get() = getBoolean(KEY_BACKUP_FAIL, false)
   val nextBackupFailureSnoozeTime: Duration get() = getLong(KEY_BACKUP_FAIL_ACKNOWLEDGED_SNOOZE_TIME, 0L).milliseconds
   val nextBackupFailureSheetSnoozeTime: Duration get() = getLong(KEY_BACKUP_FAIL_SHEET_SNOOZE_TIME, getNextBackupFailureSheetSnoozeTime(lastBackupTime.milliseconds).inWholeMilliseconds).milliseconds
@@ -388,6 +393,9 @@ class BackupValues(store: KeyValueStore) : SignalStoreValues(store) {
 
   /** The value from the last successful SVRB operation that must be passed to the next SVRB operation. */
   var nextBackupSecretData by nullableBlobValue(KEY_NEXT_BACKUP_SECRET_DATA, null)
+
+  /** True if user re-registered but did not restore SVRB secrets during registration, and should on backup. */
+  var backupSecretRestoreRequired by booleanValue(KEY_BACKUP_SECRET_RESTORE_REQUIRED, false)
 
   /** True if attempting to restore backup from quick restore/QR code */
   var restoringViaQr by booleanValue(KEY_RESTORING_VIA_QR, false)

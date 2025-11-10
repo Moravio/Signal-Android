@@ -65,9 +65,9 @@ import org.thoughtcrime.securesms.backup.v2.importer.ChatItemArchiveImporter
 import org.thoughtcrime.securesms.backup.v2.processor.AccountDataArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.AdHocCallArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.ChatArchiveProcessor
-import org.thoughtcrime.securesms.backup.v2.processor.ChatFolderProcessor
+import org.thoughtcrime.securesms.backup.v2.processor.ChatFolderArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.ChatItemArchiveProcessor
-import org.thoughtcrime.securesms.backup.v2.processor.NotificationProfileProcessor
+import org.thoughtcrime.securesms.backup.v2.processor.NotificationProfileArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.RecipientArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.processor.StickerArchiveProcessor
 import org.thoughtcrime.securesms.backup.v2.proto.BackupDebugInfo
@@ -142,6 +142,7 @@ import org.whispersystems.signalservice.api.ApplicationErrorAction
 import org.whispersystems.signalservice.api.NetworkResult
 import org.whispersystems.signalservice.api.StatusCodeErrorAction
 import org.whispersystems.signalservice.api.archive.ArchiveGetMediaItemsResponse
+import org.whispersystems.signalservice.api.archive.ArchiveKeyRotationLimitResponse
 import org.whispersystems.signalservice.api.archive.ArchiveMediaRequest
 import org.whispersystems.signalservice.api.archive.ArchiveMediaResponse
 import org.whispersystems.signalservice.api.archive.ArchiveServiceAccess
@@ -164,6 +165,7 @@ import org.whispersystems.signalservice.internal.crypto.PaddingInputStream
 import org.whispersystems.signalservice.internal.push.AttachmentUploadForm
 import org.whispersystems.signalservice.internal.push.AuthCredentials
 import org.whispersystems.signalservice.internal.push.SubscriptionsConfiguration
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
@@ -564,7 +566,7 @@ object BackupRepository {
       return false
     }
 
-    return !SignalStore.backup.hasBackupBeenUploaded && SignalStore.backup.hasBackupFailure && System.currentTimeMillis().milliseconds > SignalStore.backup.nextBackupFailureSheetSnoozeTime
+    return (!SignalStore.backup.hasBackupBeenUploaded || SignalStore.backup.hasValidationError) && SignalStore.backup.hasBackupFailure && System.currentTimeMillis().milliseconds > SignalStore.backup.nextBackupFailureSheetSnoozeTime
   }
 
   /**
@@ -572,6 +574,11 @@ object BackupRepository {
    */
   @JvmStatic
   fun shouldDisplayCouldNotCompleteBackupSheet(): Boolean {
+    // Temporarily disabling. May re-enable in the future.
+    if (true) {
+      return false
+    }
+
     if (shouldNotDisplayBackupFailedMessaging()) {
       return false
     }
@@ -976,7 +983,7 @@ object BackupRepository {
         // We're using a snapshot, so the transaction is more for perf than correctness
         dbSnapshot.rawWritableDatabase.withinTransaction {
           progressEmitter?.onAccount()
-          AccountDataArchiveProcessor.export(dbSnapshot, signalStoreSnapshot) { frame ->
+          AccountDataArchiveProcessor.export(dbSnapshot, signalStoreSnapshot, exportState) { frame ->
             writer.write(frame)
             extraFrameOperation?.invoke(frame)
             eventTimer.emit("account")
@@ -1035,7 +1042,7 @@ object BackupRepository {
           }
 
           progressEmitter?.onNotificationProfile()
-          NotificationProfileProcessor.export(dbSnapshot, exportState) { frame ->
+          NotificationProfileArchiveProcessor.export(dbSnapshot, exportState) { frame ->
             writer.write(frame)
             extraFrameOperation?.invoke(frame)
             eventTimer.emit("notification-profile")
@@ -1047,7 +1054,7 @@ object BackupRepository {
           }
 
           progressEmitter?.onChatFolder()
-          ChatFolderProcessor.export(dbSnapshot, exportState) { frame ->
+          ChatFolderArchiveProcessor.export(dbSnapshot, exportState) { frame ->
             writer.write(frame)
             extraFrameOperation?.invoke(frame)
             eventTimer.emit("chat-folder")
@@ -1124,20 +1131,25 @@ object BackupRepository {
     forwardSecrecyToken: BackupForwardSecrecyToken,
     cancellationSignal: () -> Boolean = { false }
   ): ImportResult {
-    val frameReader = if (backupKey == null) {
-      PlainTextBackupReader(inputStreamFactory(), length)
-    } else {
-      EncryptedBackupReader.createForSignalBackup(
-        key = backupKey,
-        aci = selfData.aci,
-        forwardSecrecyToken = forwardSecrecyToken,
-        length = length,
-        dataStream = inputStreamFactory
-      )
-    }
+    try {
+      val frameReader = if (backupKey == null) {
+        PlainTextBackupReader(inputStreamFactory(), length)
+      } else {
+        EncryptedBackupReader.createForSignalBackup(
+          key = backupKey,
+          aci = selfData.aci,
+          forwardSecrecyToken = forwardSecrecyToken,
+          length = length,
+          dataStream = inputStreamFactory
+        )
+      }
 
-    return frameReader.use { reader ->
-      import(reader, selfData, cancellationSignal)
+      return frameReader.use { reader ->
+        import(reader, selfData, cancellationSignal)
+      }
+    } catch (e: IOException) {
+      Log.w(TAG, "Unable to restore signal backup", e)
+      return ImportResult.Failure
     }
   }
 
@@ -1281,6 +1293,7 @@ object BackupRepository {
       }
 
       RecipientId.clearCache()
+      SignalDatabase.remappedRecords.clearCache()
       AppDependencies.recipientCache.clear()
       AppDependencies.recipientCache.clearSelf()
       SignalDatabase.threads.clearCache()
@@ -1338,13 +1351,13 @@ object BackupRepository {
           }
 
           frame.notificationProfile != null -> {
-            NotificationProfileProcessor.import(frame.notificationProfile, importState)
+            NotificationProfileArchiveProcessor.import(frame.notificationProfile, importState)
             eventTimer.emit("notification-profile")
             frameCount++
           }
 
           frame.chatFolder != null -> {
-            ChatFolderProcessor.import(frame.chatFolder, importState)
+            ChatFolderArchiveProcessor.import(frame.chatFolder, importState)
             eventTimer.emit("chat-folder")
             frameCount++
           }
@@ -1423,6 +1436,7 @@ object BackupRepository {
       SignalDatabase.rawDatabase.forceForeignKeyConstraintsEnabled(true)
     }
 
+    SignalDatabase.remappedRecords.clearCache()
     AppDependencies.recipientCache.clear()
     AppDependencies.recipientCache.warmUp()
     SignalDatabase.threads.clearCache()
@@ -2050,6 +2064,10 @@ object BackupRepository {
       .then { SignalNetwork.archive.getSvrBAuthorization(SignalStore.account.requireAci(), it.messageBackupAccess) }
   }
 
+  fun getKeyRotationLimit(): NetworkResult<ArchiveKeyRotationLimitResponse> {
+    return SignalNetwork.archive.getKeyRotationLimit()
+  }
+
   /**
    * During normal operation, ensures that the backupId has been reserved and that your public key has been set,
    * while also returning an archive access data. Should be the basis of all backup operations.
@@ -2382,6 +2400,26 @@ object BackupRepository {
     ).encodeByteString()
   }
 
+  fun getRemoteBackupForwardSecrecyMetadata(): NetworkResult<ByteArray?> {
+    return initBackupAndFetchAuth()
+      .then { credential -> SignalNetwork.archive.getBackupInfo(SignalStore.account.requireAci(), credential.messageBackupAccess) }
+      .then { info -> getCdnReadCredentials(CredentialType.MESSAGE, info.cdn ?: Cdn.CDN_3.cdnNumber).map { it.headers to info } }
+      .then { pair ->
+        val (cdnCredentials, info) = pair
+        val headers = cdnCredentials.toMutableMap().apply {
+          this["range"] = "bytes=0-${EncryptedBackupReader.BACKUP_SECRET_METADATA_UPPERBOUND - 1}"
+        }
+
+        AppDependencies.signalServiceMessageReceiver.retrieveBackupForwardSecretMetadataBytes(
+          info.cdn!!,
+          headers,
+          "backups/${info.backupDir}/${info.backupName}",
+          EncryptedBackupReader.BACKUP_SECRET_METADATA_UPPERBOUND
+        )
+      }
+      .map { bytes -> EncryptedBackupReader.readForwardSecrecyMetadata(ByteArrayInputStream(bytes)) }
+  }
+
   interface ExportProgressListener {
     fun onAccount()
     fun onRecipient()
@@ -2417,6 +2455,8 @@ class ExportState(
   val threadIdToRecipientId: MutableMap<Long, Long> = hashMapOf()
   val recipientIdToAci: MutableMap<Long, ByteString> = hashMapOf()
   val aciToRecipientId: MutableMap<String, Long> = hashMapOf()
+  val recipientIdToE164: MutableMap<Long, Long> = hashMapOf()
+  val customChatColorIds: MutableSet<Long> = hashSetOf()
 }
 
 class ImportState(val mediaRootBackupKey: MediaRootBackupKey) {

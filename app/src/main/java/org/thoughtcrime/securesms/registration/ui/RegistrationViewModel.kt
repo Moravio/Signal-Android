@@ -243,8 +243,8 @@ class RegistrationViewModel : ViewModel() {
   }
 
   fun togglePinKeyboardType() {
-    store.update { previousState ->
-      previousState.copy(pinKeyboardType = previousState.pinKeyboardType.other)
+    store.update {
+      it.copy(pinKeyboardType = it.pinKeyboardType.other)
     }
   }
 
@@ -912,6 +912,10 @@ class RegistrationViewModel : ViewModel() {
     if (!remoteResult.reRegistration && SignalStore.registration.restoreDecisionState.isDecisionPending) {
       Log.v(TAG, "Not re-registration, and still pending restore decision, likely an account with no data to restore, skipping post register restore")
       SignalStore.registration.restoreDecisionState = RestoreDecisionState.NewAccount
+    }
+
+    if (remoteResult.reRegistration) {
+      SignalStore.backup.backupSecretRestoreRequired = true
     }
 
     if (reglockEnabled || SignalStore.account.restoredAccountEntropyPool) {

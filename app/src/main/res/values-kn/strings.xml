@@ -60,6 +60,12 @@
     <string name="ApplicationPreferencesActivity_record_payments_recovery_phrase">ಪಾವತಿಗಳನ್ನು ಮರೆಪಡೆಯುವ ಪದಗುಚ್ಛವನ್ನು ರೆಕಾರ್ಡ್‌ ಮಾಡಿ</string>
     <string name="ApplicationPreferencesActivity_record_phrase">ಪದಗುಚ್ಛವನ್ನು ರೆಕಾರ್ಡ್‌ ಮಾಡಿ</string>
     <string name="ApplicationPreferencesActivity_before_you_can_disable_your_pin">ನಿಮ್ಮ PIN ಅನ್ನು ನೀವು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸುವ‌ ಮೊದಲು, ನಿಮ್ಮ ಪಾವತಿಗಳನ್ನು ಮರೆಪಡೆಯುವ ಪದಗುಚ್ಛವನ್ನು ರೆಕಾರ್ಡ್‌ ಮಾಡಿ ನಿಮ್ಮ ಪೇಮೆಂಟ್ಸ್ ಖಾತೆಯ ರಿಕವರಿ ಮಾಡುವುದನ್ನು ನೀವು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಬೇಕು.</string>
+    <!-- The title of a dialog letting the user know they have to rotate their recovery key if they want to disable PINs -->
+    <string name="AdvancedPinSettingsFragment_rotate_aep_dialog_title">ಹೊಸ ರಿಕವರಿ ಕೀ ರಚಿಸಿ</string>
+    <!-- The body of a dialog letting the user know they have to rotate their recovery key if they want to disable PINs -->
+    <string name="AdvancedPinSettingsFragment_rotate_aep_dialog_body">You must create and record a new recovery key before you can disable your PIN.</string>
+    <!-- The confirmation button for a dialog letting the user know they have to rotate their recovery key if they want to disable PINs. If they click the button, they will be taken to a flow to rotate their key. -->
+    <string name="AdvancedPinSettingsFragment_rotate_aep_dialog_positive_button">Create key</string>
 
     <!-- NumericKeyboardView -->
   <!-- Removed by excludeNonTranslatables <string name="NumericKeyboardView__1" translatable="false">1</string> -->
@@ -1168,6 +1174,9 @@
     <!-- ExpiredBuildReminder -->
     <string name="ExpiredBuildReminder_this_version_of_signal_has_expired">ನಿಮ್ಮ Signal ಆವೃತ್ತಿಯ ವಾಯಿದೆ ಮುಗಿದಿದೆ. ಸಂದೇಶಗಳನ್ನು ಕಳುಹಿಸಲು ಮತ್ತೆ ಪಡೆಯಲು ನವೀಕರಿಸಿ.</string>
     <string name="ExpiredBuildReminder_update_now">ಈಗ ನವೀಕರಿಸಿ</string>
+
+    <!-- A message in a banner shown at the top of the screen indicating that the user must upgrade their device to use signal. -->
+    <string name="DeprecatedSdkBanner_body">ಈ ಸಾಧನದಲ್ಲಿ Signal ಇನ್ನು ಕಾರ್ಯನಿರ್ವಹಿಸುವುದಿಲ್ಲ. Signal ಅನ್ನು ಮತ್ತೊಮ್ಮೆ ಬಳಸಲು, Android ನ ಹೊಸ ಆವೃತ್ತಿಗೆ ನಿಮ್ಮ ಸಾಧನವನ್ನು ನವೀಕರಿಸಿ ಅಥವಾ ಹೊಸ ಸಾಧನಕ್ಕೆ ಬದಲಾಯಿಸಿ.</string>
 
     <!-- Title of notification telling users to update Signal -->
     <string name="DeprecatedNotificationJob_update_signal">Signal ಅನ್ನು ನವೀಕರಿಸಿ</string>
@@ -2922,6 +2931,8 @@
     <string name="SubmitDebugLogActivity_success">ಯಶಸ್ವಿಯಾಗಿದೆ!</string>
     <string name="SubmitDebugLogActivity_copy_this_url_and_add_it_to_your_issue">ಈ URL ಅನ್ನು ನಕಲಿಸಿ ಮತ್ತು ಇದನ್ನು ನಿಮ್ಮ ವಿಷಯ ವರದಿಗೆ ಸೇರಿಸಿ ಅಥವಾ ಇಮೇಲ್ ಬೆಂಬಲಿಸಿ :\n\n<b>%1$s</b></string>
     <string name="SubmitDebugLogActivity_share">ಹಂಚಿಕೊಳ್ಳಿ</string>
+    <!-- Displayed when entering activity in view-only mode -->
+    <string name="SubmitDebugLogActivity_close">ಮುಚ್ಚಿ</string>
     <string name="SubmitDebugLogActivity_this_log_will_be_posted_publicly_online_for_contributors">ಈ ದಾಖಲೆಯನ್ನು ಕೊಡುಗೆದಾರರ ವೀಕ್ಷಣೆಗೆ ಬಹಿರಂಗ ಅಂತರ್ಜಾಲಕ್ಕೆ ಪೋಸ್ಟ್ ಮಾಡಲಾಗುತ್ತದೆ. ನೀವು ಇದನ್ನು ಸಲ್ಲಿಸುವ ಮೊದಲು ಪರೀಕ್ಷಿಸಬಹುದು.</string>
     <!-- Banner message shown while submitting debug log -->
     <string name="SubmitDebugLogActivity_your_log_will_be_posted_online">ನೀವು ಸಲ್ಲಿಸಿ ಕ್ಲಿಕ್ ಮಾಡಿದಾಗ, ನಿಮ್ಮ ಲಾಗ್ ಅನ್ನು 30 ದಿನಗಳ ಕಾಲ ಅನನ್ಯ, ಅಪ್ರಕಟಿತ URL ನಲ್ಲಿ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಪೋಸ್ಟ್ ಮಾಡಲಾಗುತ್ತದೆ. ನೀವದನ್ನು ಮೊದಲು ಸ್ಥಳೀಯವಾಗಿ ಸೇವ್ ಮಾಡಬಹುದು.</string>
@@ -3357,6 +3368,9 @@
     <string name="WebRtcCallScreen__answer">ಉತ್ತರಿಸಿ</string>
     <!-- Label with hyphenation. Translation can use soft hyphen - Unicode U+00AD -->
     <string name="WebRtcCallScreen__answer_without_video">ವೀಡಿಯೊ ಇಲ್ಲದೇ ಉತ್ತರಿಸಿ</string>
+
+    <!-- CallScreen -->
+    <string name="CallScreen__change_camera_direction">Change camera direction</string>
 
     <!-- WebRtcAudioOutputToggle -->
     <!-- Label for a dialog asking the user to switch the audio output device during a call -->
@@ -5181,10 +5195,19 @@
 
     <!-- CreateGroupActivity -->
     <string name="CreateGroupActivity__skip">ಬಿಟ್ಟು ಮುಂದುವರಿಯಿರಿ</string>
+
     <plurals name="CreateGroupActivity__d_members">
         <item quantity="one">%1$d ಸದಸ್ಯ</item>
         <item quantity="other">%1$d ಸದಸ್ಯರು</item>
     </plurals>
+
+    <!-- Create group screen title displayed when there is at least one group member selected. The placeholder is the total number of group members. -->
+    <plurals name="CreateGroupActivity__s_members">
+        <item quantity="one">%1$s ಸದಸ್ಯ</item>
+        <item quantity="other">%1$s ಸದಸ್ಯರು</item>
+    </plurals>
+    <!-- Accessibility label for navigating to the next screen in the create group flow. -->
+    <string name="CreateGroupActivity__accessibility_next">ಮುಂದೆ</string>
 
     <!-- ShareActivity -->
     <string name="ShareActivity__share">ಹಂಚಿಕೊಳ್ಳಿ</string>
@@ -5906,24 +5929,24 @@
     <string name="NewConversationActivity__s_has_been_blocked">%1$s ಅವರನ್ನು ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ</string>
     <!-- Snackbar message when blocking a contact has failed -->
     <string name="NewConversationActivity__block_failed">ನಿರ್ಬಂಧಿಸುವುದು ವಿಫಲವಾಗಿದೆ</string>
-    <!-- Dialog title when remove target contact is in system contacts -->
-    <string name="NewConversationActivity__unable_to_remove_s">%1$s ಅವರನ್ನು ತೆಗೆದುಹಾಕಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ</string>
-    <!-- Dialog message when remove target contact is in system contacts -->
-    <string name="NewConversationActivity__this_person_is_saved_to_your">ಈ ವ್ಯಕ್ತಿಯನ್ನು ನಿಮ್ಮ ಡಿವೈಸಿನ ಸಂಪರ್ಕಗಳಲ್ಲಿ ಸೇವ್ ಮಾಡಲಾಗಿದೆ. ಅವರನ್ನು ನಿಮ್ಮ ಸಂಪರ್ಕಗಳಿಂದ ಅಳಿಸಿ ಹಾಗು ಮತ್ತೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.</string>
-    <!-- Dialog action to view contact when they can\'t be removed otherwise -->
-    <string name="NewConversationActivity__view_contact">ಸಂಪರ್ಕವನ್ನು ವೀಕ್ಷಿಸಿ</string>
     <!-- Error message shown when looking up a person by phone number and that phone number is not associated with a signal account -->
     <string name="NewConversationActivity__s_is_not_a_signal_user">%1$s ಅವರು Signal ಬಳಕೆದಾರರಲ್ಲ</string>
-    <!-- Error message shown when we could not get a user from the username link -->
-    <string name="NewConversationActivity__">%1$s ಅವರು Signal ಬಳಕೆದಾರರಲ್ಲ</string>
+    <!-- Accessibility label for opening the screen specific dropdown menu. -->
+    <string name="NewConversationActivity__accessibility_open_top_bar_menu">ಮೆನು ತೆರೆಯಿರಿ</string>
     <!-- Error message shown in a dialog when trying to create a new group with non-signal users (e.g., unregistered or phone number only contacts) -->
     <plurals name="CreateGroupActivity_not_signal_users">
         <item quantity="one">%1$s ಅವರು Signal ಬಳಕೆದಾರರಲ್ಲ</item>
         <item quantity="other">%1$s ಅವರು Signal ಬಳಕೆದಾರರಲ್ಲ</item>
     </plurals>
 
-    <!-- Hint text that shows in the recipient search box when no text is entered yet. -->
-    <string name="ContactFilterView__search_name_or_number">ಹೆಸರು, ಯೂಸರ್‌ನೇಮ್ ಅಥವಾ ಸಂಖ್ಯೆ</string>
+    <!-- Hint text that shows in the recipient search bar when no text is entered yet. -->
+    <string name="RecipientSearchBar__search_name_or_number">ಹೆಸರು, ಯೂಸರ್‌ನೇಮ್ ಅಥವಾ ಸಂಖ್ಯೆ</string>
+    <!-- Accessibility label for the button to switch to the numeric keyboard type. -->
+    <string name="RecipientSearchBar_accessibility_switch_to_numeric_keyboard">ನ್ಯೂಮರಿಕ್ ಕೀಬೋರ್ಡ್‌ಗೆ ಬದಲಿಸಿ</string>
+    <!-- Accessibility label for the button to switch to the alphanumeric keyboard type. -->
+    <string name="RecipientSearchBar_accessibility_switch_to_alphanumeric_keyboard">ಆಲ್ಫಾನ್ಯೂಮರಿಕ್ ಕೀಬೋರ್ಡ್‌ಗೆ ಬದಲಿಸಿ</string>
+    <!-- Accessibility label for the button to clear the search filter. -->
+    <string name="RecipientSearchBar_accessibility_clear_search">ಹುಡುಕಾಟ ಫಿಲ್ಟರ್ ಅನ್ನು ಮರುಹೊಂದಿಸಿ</string>
 
     <!-- VoiceNotePlayerView -->
     <string name="VoiceNotePlayerView__dot_s">· %1$s</string>
@@ -7749,6 +7772,8 @@
     <string name="TurnOnSignalBackups__turn_on">ಆನ್‌ ಮಾಡಿ</string>
     <!-- Button of a megaphone shown at the bottom of the chat list to prompt the user to enable message backups that will simply dismiss the megaphone -->
     <string name="TurnOnSignalBackups__not_now">ಈಗಲ್ಲ</string>
+    <!-- Text for a "toast" that pops up at the bottom of the user\'s screen after they respond "not now" to a prompt asking them to enable backups -->
+    <string name="TurnOnSignalBackups__toast_not_now">ನೀವು \'ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ\" ಬ್ಯಾಕಪ್‌ಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಬಹುದು</string>
 
     <!-- Title of a megaphone shown to prompt the user to verify their recovery key -->
     <string name="VerifyBackupKey__title">ನಿಮ್ಮ ರಿಕವರಿ ಕೀಯನ್ನು ಪರಿಶೀಲಿಸಿ</string>
@@ -8425,13 +8450,15 @@
 
     <!-- MessageBackupsKeyEducationScreen -->
     <!-- Screen headline -->
-    <string name="MessageBackupsKeyEducationScreen__your_backup_key">ನಿಮ್ಮ ರಿಕವರಿ ಕೀ</string>
+    <string name="MessageBackupsKeyEducationScreen__your_backup_key">ರಿಕವರಿ ಕೀ</string>
     <!-- Screen body part 1 -->
-    <string name="MessageBackupsKeyEducationScreen__your_backup_key_is_a">ನಿಮ್ಮ ರಿಕವರಿ ಕೀ 64-ಅಕ್ಷರಗಳ ಕೋಡ್ ಆಗಿದ್ದು, ನೀವು Signal ಅನ್ನು ಮರು-ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿದಾಗ ನಿಮ್ಮ ಬ್ಯಾಕಪ್ ಅನ್ನು ರಿಸ್ಟೋರ್ ಮಾಡಲು ನಿಮಗೆ ಅನುಮತಿಸುತ್ತದೆ.</string>
+    <string name="MessageBackupsKeyEducationScreen__your_backup_key_is_a">ನಿಮ್ಮ ರಿಕವರಿ ಕೀ 64-ಅಕ್ಷರಗಳ ಕೋಡ್ ಆಗಿದ್ದು, ನಿಮ್ಮ ಬ್ಯಾಕಪ್ ಅನ್ನು ರೀಸ್ಟೋರ್ ಮಾಡಲು ಅದು ನಿಮಗೆ ಬೇಕಾಗುತ್ತದೆ.</string>
     <!-- Screen body part 2 -->
-    <string name="MessageBackupsKeyEducationScreen__if_you_forget_your_key">ನಿಮ್ಮ ಕೀಯನ್ನು ನೀವು ಮರೆತರೆ, ನಿಮ್ಮ ಬ್ಯಾಕಪ್ ಅನ್ನು ರಿಸ್ಟೋರ್ ಮಾಡಲು ನಿಮಗೆ ಸಾಧ್ಯವಾಗುವುದಿಲ್ಲ. ನಿಮ್ಮ ಬ್ಯಾಕಪ್ ಅನ್ನು ರಿಕವರ್ ಮಾಡಲು Signal ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ಸಾಧ್ಯವಾಗುವುದಿಲ್ಲ.</string>
+    <string name="MessageBackupsKeyEducationScreen__store_your_recovery">ನಿಮ್ಮ ರಿಕವರಿ ಕೀ ಅನ್ನು ಸುರಕ್ಷಿತ ಪಾಸ್‌ವರ್ಡ್ ಮ್ಯಾನೇಜರ್ ರೀತಿಯ ಸ್ಥಳದಲ್ಲಿ ಸುರಕ್ಷಿತವಾಗಿ ಸಂಗ್ರಹಿಸಿ ಮತ್ತು ಅದನ್ನು ಯಾರೊಂದಿಗೂ ಹಂಚಿಕೊಳ್ಳಬೇಡಿ.</string>
+    <!-- Screen body part 3 -->
+    <string name="MessageBackupsKeyEducationScreen__if_you_lose_it">ನೀವು ಅದನ್ನು ಕಳೆದುಕೊಂಡರೆ, ನಿಮ್ಮ ಮೆಸೇಜ್‌ಗಳನ್ನು ರಿಕವರ್ ಮಾಡಲು ನಿಮಗೆ ಸಾಧ್ಯವಾಗುವುದಿಲ್ಲ.</string>
     <!-- Action button label -->
-    <string name="MessageBackupsKeyEducationScreen__next">ಮುಂದೆ</string>
+    <string name="MessageBackupsKeyEducationScreen__view_recovery_key">ರಿಕವರಿ ಕೀ ವೀಕ್ಷಿಸಿ</string>
 
     <!-- MessageBackupsKeyRecordScreen -->
     <!-- Screen headline -->
@@ -8482,6 +8509,12 @@
     <string name="MessageBackupsKeyRecordScreen__create_a_new_backup_key">ಹೊಸ ರಿಕವರಿ ಕೀ ರಚಿಸಿ</string>
     <!-- Bottom Sheet body for creating a new AEP key -->
     <string name="MessageBackupsKeyRecordScreen__creating_a_new_key_is_only_necessary">ನಿಮ್ಮ ಕೀ ಬೇರೆಯವರಿಗೆ ತಿಳಿದಿದ್ದರೆ ಮಾತ್ರ ಹೊಸ ಕೀ ರಚಿಸುವುದು ಅಗತ್ಯವಾಗಿರುತ್ತದೆ. ನೀವು ಮೀಡಿಯಾ ಸೇರಿದಂತೆ ನಿಮ್ಮ ಬ್ಯಾಕಪ್ ಅನ್ನು ಮರು-ಅಪ್‌ಲೋಡ್ ಮಾಡಬೇಕಾಗುತ್ತದೆ. ನೀವು \"ಸಂಗ್ರಹಣೆಯನ್ನು ಆಪ್ಟಿಮೈಜ್ ಮಾಡಿ\" ಆಯ್ಕೆಯನ್ನು ಬಳಸುತ್ತಿದ್ದರೆ ಆಫ್‌ಲೋಡ್ ಮಾಡಿದ ಮೀಡಿಯಾವನ್ನು ಮೊದಲು ಡೌನ್‌ಲೋಡ್ ಮಾಡಬೇಕು.</string>
+    <!-- Dialog title shown when user attempts to exit backup setup before completion -->
+    <string name="MessageBackupsKeyRecordScreen__exit_backup_setup">Exit backup setup?</string>
+    <!-- Dialog body warning user that backup setup is incomplete -->
+    <string name="MessageBackupsKeyRecordScreen__you_have_not_finished_setting_up_backups">You have not finished setting up backups, and no backup has been created. You can enable backups in Settings.</string>
+    <!-- Dialog confirmation button to exit backup setup -->
+    <string name="MessageBackupsKeyRecordScreen__exit_backup_setup_confirm">Exit backup setup</string>
 
     <!-- BackupKeyDisplayFragment -->
     <!-- Dialog title when exiting before confirming new key -->
@@ -8746,6 +8779,16 @@
     <!-- No backup to Restore tonal cta to skip restore -->
     <string name="NoBackupToRestore_skip_restore">ರಿಸ್ಟೋರ್ ಸ್ಕಿಪ್ ಮಾಡಿ</string>
 
+    <!-- Dialog title when the recovery key change limit is reached -->
+    <string name="MessageBackupsKeyRecordScreen__limit_reached_title">Recovery key limit reached</string>
+    <!-- Dialog body when the recovery key change limit is reached -->
+    <string name="MessageBackupsKeyRecordScreen__limit_reached_body">You successfully created a new recovery key, but to prevent abuse the number of new keys you can create is limited. You will not be able to create another key for 7 days. Store your recovery key somewhere safe and secure.</string>
+    <!-- Dialog title when the recovery key change limit is exhausted and you cannot create a new key -->
+    <string name="MessageBackupsKeyRecordScreen__limit_exceeded_title">Can’t create new key</string>
+    <!-- Dialog body when the recovery key change limit is exhausted and you cannot create a new key. Placeholder is number of days remaining until they can create a new key. -->
+    <string name="MessageBackupsKeyRecordScreen__limit_exceeded_body">You’ve exhausted the number of new keys you can create. You will be able to create a new recovery key in 7 days. If you believe someone may be able to access your backup, you can choose to “Turn off and delete backup.”</string>
+    <!-- Button to acknowledge and dismiss dialog   -->
+    <string name="MessageBackupsKeyRecordScreen__ok">ಓಕೆ</string>
     <!-- Accessibility label for close search button in MainToolbar -->
     <string name="MainToolbar__close_search_content_description">ಹುಡುಕಾಟವನ್ನು ಮುಚ್ಚಿ</string>
     <!-- Accessibility label for clear search query in MainToolbar -->
@@ -8811,8 +8854,10 @@
     <string name="Poll__poll_voted">%1$s ಈ ಸಮೀಕ್ಷೆಯಲ್ಲಿ ವೋಟ್ ಮಾಡಿದ್ದಾರೆ: \"%2$s\"</string>
     <!-- Option in settings to configure notifications for polls -->
     <string name="Poll__poll">ಸಮೀಕ್ಷೆಗಳು</string>
-    <!-- Title of screen that shows the poll results of a poll -->
+    <!-- Title of screen that shows the poll results of a poll after it has ended-->
     <string name="Poll__poll_results">ಸಮೀಕ್ಷೆಯ ಫಲಿತಾಂಶಗಳು</string>
+    <!-- Title of screen that shows the poll details of a poll -->
+    <string name="Poll__poll_details">ಸಮೀಕ್ಷೆಯ ವಿವರಗಳು</string>
     <!-- Header text displaying the question of the poll -->
     <string name="Poll__question">ಪ್ರಶ್ನೆ</string>
     <!-- Text displaying how many votes, %1$d, an option has gotten -->
@@ -8820,10 +8865,22 @@
         <item quantity="one">%1$d ವೋಟ್</item>
         <item quantity="other">%1$d ವೋಟ್‌ಗಳು</item>
     </plurals>
+    <!-- Content description to describe the icon that is shown next to the winning option when the poll ends -->
+    <string name="Poll__poll_winner">ವಿಜೇತ</string>
     <!-- Text that when pressed will end the poll   -->
     <string name="Poll__end_poll">ಸಮೀಕ್ಷೆಯನ್ನು ಕೊನೆಗೊಳಿಸಿ</string>
     <!-- Button that once pressed will show all of the voters for a poll -->
     <string name="Poll__see_all">ಎಲ್ಲವನ್ನೂ ನೋಡಿ</string>
+    <!-- Dialog title when a poll fails to end -->
+    <string name="Poll__couldnt_end_poll">ಸಮೀಕ್ಷೆ ಕೊನೆಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ</string>
+    <!-- Dialog body when a poll fails to end and to try again -->
+    <string name="Poll__check_connection">ನಿಮ್ಮ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ ಹಾಗೂ ಇನ್ನೊಮ್ಮೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <!-- Dialog title when you go to end a poll -->
+    <string name="Poll__end_poll_title">End poll?</string>
+    <!-- Dialog body when you go to end a poll -->
+    <string name="Poll__end_poll_body">Group members will no longer be able to vote in this poll.</string>
+    <!-- Body used in dialog when we are waiting for network -->
+    <string name="Poll__waiting_for_network">ನೆಟ್ ವರ್ಕ್ ಗೆ ನಿರೀಕ್ಷಿಸಲಾಗುತ್ತಿದೆ…</string>
     <!-- Header when creating a new poll -->
     <string name="CreatePollFragment__new_poll">ಹೊಸ ಸಮೀಕ್ಷೆ</string>
     <!-- Section text to enter in a question for a poll  -->
@@ -8844,6 +8901,76 @@
     <string name="CreatePollFragment__add_option">ಕನಿಷ್ಠ 2 ಆಯ್ಕೆಗಳನ್ನು ಸೇರಿಸಿ</string>
     <!-- Snackbar text to add a question before creating a poll -->
     <string name="CreatePollFragment__add_question">ಪ್ರಶ್ನೆಯನ್ನು ಸೇರಿಸಿ</string>
+
+    <!-- CallQualityIssue -->
+    <!-- Label for general audio issue category -->
+    <string name="CallQualityIssue__audio_issue">ಆಡಿಯೊ ಸಮಸ್ಯೆ</string>
+    <!-- Label for general video issue category -->
+    <string name="CallQualityIssue__video_issue">ವೀಡಿಯೊ ಸಮಸ್ಯೆ</string>
+    <!-- Label for call dropped issue -->
+    <string name="CallQualityIssue__call_droppped">ಕರೆ ಕಡಿತಗೊಂಡಿತು</string>
+    <!-- Label for other/custom issues not covered by predefined categories -->
+    <string name="CallQualityIssue__something_else">ಬೇರೆ ಸಮಸ್ಯೆ</string>
+    <!-- Label for audio stuttering/choppy audio issue -->
+    <string name="CallQualityIssue__audio_stuttering">ಆಡಿಯೊ ತೊದಲುವಿಕೆ</string>
+    <!-- Label for audio cutting out/dropping issue -->
+    <string name="CallQualityIssue__audio_cut_out">ಆಡಿಯೊದಲ್ಲಿ ದಿಢೀರ್ ವ್ಯತ್ಯಯ</string>
+    <!-- Label for echo heard by the user -->
+    <string name="CallQualityIssue__i_heard_echo">ನನಗೆ ಪ್ರತಿಧ್ವನಿ ಕೇಳಿಸಿತು</string>
+    <!-- Label for echo heard by other call participants -->
+    <string name="CallQualityIssue__others_heard_echo">ಇತರರಿಗೆ ಪ್ರತಿಧ್ವನಿ ಕೇಳಿಸಿತು</string>
+    <!-- Label for poor video quality issue -->
+    <string name="CallQualityIssue__poor_video_quality">ಕಳಪೆ ವೀಡಿಯೊ ಗುಣಮಟ್ಟ</string>
+    <!-- Label for low video resolution issue -->
+    <string name="CallQualityIssue__low_resolution">ಕಡಿಮೆ ರೆಸಲ್ಯೂಷನ್</string>
+    <!-- Label for camera malfunction issue -->
+    <string name="CallQualityIssue__camera_did_not_work">ಕ್ಯಾಮರಾ ಕೆಲಸ ಮಾಡಲಿಲ್ಲ</string>
+
+    <!-- CallQualitySomethingElseScreen -->
+    <!-- Title for the "Something else" call quality issue screen -->
+    <string name="CallQualitySomethingElseScreen__title">ಬೇರೆ ಸಮಸ್ಯೆ</string>
+    <!-- Label for text field where user describes their call quality issue -->
+    <string name="CallQualitySomethingElseScreen__describe_your_issue">ನಿಮ್ಮ ಸಮಸ್ಯೆಯನ್ನು ವಿವರಿಸಿ</string>
+    <!-- Privacy notice explaining that issue details will be kept private and used to improve Signal calls -->
+    <string name="CallQualitySomethingElseScreen__privacy_notice">ಸಮಸ್ಯೆಗೆ ಸಂಬಂಧಿಸಿದ ಯಾವುದೇ ವಿವರಗಳನ್ನು ಸೇರಿಸಿ. ನೀವು ಇಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳುವ ಯಾವುದೇ ಸಂಗತಿಯನ್ನು ಖಾಸಗಿಯಾಗಿ ಇರಿಸಲಾಗುತ್ತದೆ ಮತ್ತು Signal ನಲ್ಲಿ ಕರೆಗಳನ್ನು ಸುಧಾರಿಸುವುದಕ್ಕೆ ಸಹಾಯ ಮಾಡಲು ಮಾತ್ರ ಬಳಸಲಾಗುತ್ತದೆ.</string>
+    <!-- Button to save the call quality issue description -->
+    <string name="CallQualitySomethingElseScreen__save">ಉಳಿಸಿ</string>
+    <!-- Content description for the back navigation button -->
+    <string name="CallQualitySomethingElseScreen__back">ಹಿಂದಕ್ಕೆ</string>
+
+    <!-- CallQualitySheet -->
+    <!-- Title asking user how their call was -->
+    <string name="CallQualitySheet__how_was_your_call">ನಿಮ್ಮ ಕರೆ ಹೇಗಿತ್ತು?</string>
+    <!-- Subtitle explaining that feedback helps improve Signal and no PII is stored -->
+    <string name="CallQualitySheet__how_was_your_call_subtitle">ಇದು Signal ನಲ್ಲಿ ಕರೆಗಳನ್ನು ಸುಧಾರಿಸಲು ನಮಗೆ ಸಹಾಯ ಮಾಡುತ್ತದೆ. ವೈಯಕ್ತಿಕವಾಗಿ ಗುರುತಿಸಬಹುದಾದ ಯಾವುದೇ ಮಾಹಿತಿಯನ್ನು ಸಂಗ್ರಹಿಸಲಾಗುವುದಿಲ್ಲ.</string>
+    <!-- Button label indicating the call had issues -->
+    <string name="CallQualitySheet__had_issues">ಸಮಸ್ಯೆಗಳಿದ್ದವು</string>
+    <!-- Button label indicating the call was great -->
+    <string name="CallQualitySheet__great">ಅದ್ಭುತ</string>
+    <!-- Title asking what issues the user experienced -->
+    <string name="CallQualitySheet__what_issues_did_you_have">ನೀವು ಯಾವ ಸಮಸ್ಯೆಗಳನ್ನು ಎದುರಿಸಿದಿರಿ?</string>
+    <!-- Instruction to select all applicable issues -->
+    <string name="CallQualitySheet__select_all_that_apply">ಅನ್ವಯಿಸುವ ಎಲ್ಲವನ್ನೂ ಆಯ್ಕೆಮಾಡಿ</string>
+    <!-- Placeholder text for describing a custom issue -->
+    <string name="CallQualitySheet__describe_your_issue">ನಿಮ್ಮ ಸಮಸ್ಯೆಯನ್ನು ವಿವರಿಸಿ</string>
+    <!-- Button to continue to the next step -->
+    <string name="CallQualitySheet__continue">ಮುಂದುವರಿಸಿ</string>
+    <!-- Title asking user to help improve Signal -->
+    <string name="CallQualitySheet__help_us_improve">ಸುಧಾರಿಸಲು ನಮಗೆ ಸಹಾಯ ಮಾಡಿ</string>
+    <!-- First part of description explaining diagnostics help improve call quality -->
+    <string name="CallQualitySheet__help_us_improve_description_prefix">ನಿಮ್ಮ ಡಯಾಗ್ನೋಸ್ಟಿಕ್ಸ್ ಮಾಹಿತಿಯನ್ನು ನಮಗೆ ಕಳುಹಿಸುವುದರಿಂದ ಕರೆಯ ಗುಣಮಟ್ಟವನ್ನು ಸುಧಾರಿಸಲು ನಮಗೆ ಸಹಾಯವಾಗುತ್ತದೆ. ನೀವು </string>
+    <!-- Link text to view debug log -->
+    <string name="CallQualitySheet__view_your_debug_log">ನಿಮ್ಮ ಡೀಬಗ್ ಲಾಗ್ ಅನ್ನು</string>
+    <!-- Last part of description about viewing debug log before submitting -->
+    <string name="CallQualitySheet__help_us_improve_description_suffix"> ಸಲ್ಲಿಸುವ ಮೊದಲೇ ವೀಕ್ಷಿಸಬಹುದು</string>
+    <!-- Toggle label for sharing debug log -->
+    <string name="CallQualitySheet__share_debug_log">ಡೀಬಗ್ ಲಾಗ್ ಹಂಚಿಕೊಳ್ಳಿ</string>
+    <!-- Privacy notice explaining what debug logs contain and why they are helpful -->
+    <string name="CallQualitySheet__debug_log_privacy_notice">ಡೀಬಗ್ ಲಾಗ್‌ಗಳು ಕಡಿಮೆ ಪ್ರಮಾಣದ ಆ್ಯಪ್ ಮಾಹಿತಿಯನ್ನು ಒಳಗೊಂಡಿರುತ್ತವೆ ಮತ್ತು ನಿಮ್ಮ ಯಾವುದೇ ಮೆಸೇಜ್ ಕಂಟೆಂಟ್‌ಗಳನ್ನು ಬಹಿರಂಗಪಡಿಸುವುದಿಲ್ಲ.</string>
+    <!-- Button to submit the call quality feedback -->
+    <string name="CallQualitySheet__submit">ಸಲ್ಲಿಸಿ</string>
+    <!-- Displayed as a snackbar after submitting feedback -->
+    <string name="CallQualitySheet__thanks_for_your_feedback">ನಿಮ್ಮ ಫೀಡ್‌ಬ್ಯಾಕ್‌ಗೆ ಧನ್ಯವಾದಗಳು!</string>
 
     <!-- EOF -->
 </resources>

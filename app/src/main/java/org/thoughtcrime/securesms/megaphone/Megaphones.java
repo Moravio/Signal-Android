@@ -463,6 +463,7 @@ public final class Megaphones {
           controller.onMegaphoneSnooze(Event.TURN_ON_SIGNAL_BACKUPS);
         })
         .setSecondaryButton(R.string.TurnOnSignalBackups__not_now, (megaphone, controller) -> {
+          controller.onMegaphoneToastRequested(controller.getMegaphoneActivity().getString(R.string.TurnOnSignalBackups__toast_not_now));
           controller.onMegaphoneSnooze(Event.TURN_ON_SIGNAL_BACKUPS);
         })
         .build();
@@ -585,7 +586,8 @@ public final class Megaphones {
   }
 
   private static boolean shouldShowBackupSchedulePermissionMegaphone(@NonNull Context context) {
-    return SignalStore.account().isPrimaryDevice() && Build.VERSION.SDK_INT >= 31 && SignalStore.settings().isBackupEnabled() && !ServiceUtil.getAlarmManager(context).canScheduleExactAlarms();
+    boolean backupsEnabled = SignalStore.settings().isBackupEnabled() || SignalStore.backup().getAreBackupsEnabled();
+    return SignalStore.account().isPrimaryDevice() && Build.VERSION.SDK_INT >= 31 && backupsEnabled && !ServiceUtil.getAlarmManager(context).canScheduleExactAlarms();
   }
 
   /**

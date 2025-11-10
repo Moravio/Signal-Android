@@ -104,12 +104,14 @@ import org.whispersystems.signalservice.api.payments.Money
 import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.push.ServiceId.ACI
 import org.whispersystems.signalservice.api.util.Preconditions
+import org.whispersystems.signalservice.api.util.UuidUtil
 import org.whispersystems.signalservice.internal.push.BodyRange
 import org.whispersystems.signalservice.internal.push.Content
 import org.whispersystems.signalservice.internal.push.DataMessage
 import org.whispersystems.signalservice.internal.push.Envelope
 import org.whispersystems.signalservice.internal.push.GroupContextV2
 import org.whispersystems.signalservice.internal.push.Preview
+import org.whispersystems.signalservice.internal.util.Util
 import java.util.Optional
 import java.util.UUID
 import kotlin.time.Duration
@@ -118,6 +120,8 @@ import kotlin.time.Duration.Companion.seconds
 object DataMessageProcessor {
 
   private const val BODY_RANGE_PROCESSING_LIMIT = 250
+  private const val POLL_CHARACTER_LIMIT = 100
+  private const val POLL_OPTIONS_LIMIT = 10
 
   fun process(
     context: Context,
@@ -145,7 +149,7 @@ object DataMessageProcessor {
         groupV2 = message.groupV2!!,
         senderRecipient = senderRecipient,
         groupSecretParams = groupSecretParams,
-        serverGuid = envelope.serverGuid
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary)
       )
 
       if (groupProcessResult == MessageContentProcessor.Gv2PreProcessResult.IGNORE) {
@@ -304,7 +308,7 @@ object DataMessageProcessor {
       serverTimeMillis = envelope.serverTimestamp!!,
       receivedTimeMillis = System.currentTimeMillis(),
       isUnidentified = metadata.sealedSender,
-      serverGuid = envelope.serverGuid,
+      serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
       type = MessageType.END_SESSION
     )
 
@@ -362,7 +366,7 @@ object DataMessageProcessor {
         receivedTimeMillis = receivedTime,
         expiresIn = expiresIn.inWholeMilliseconds,
         isUnidentified = metadata.sealedSender,
-        serverGuid = envelope.serverGuid
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary)
       )
 
       val insertResult: InsertResult? = SignalDatabase.messages.insertMessageInbox(mediaMessage, -1).orNull()
@@ -423,7 +427,7 @@ object DataMessageProcessor {
       return null
     }
 
-    val authorServiceId: ServiceId = ServiceId.parseOrThrow(storyContext.authorAci!!)
+    val authorServiceId: ServiceId = ACI.parseOrThrow(storyContext.authorAci, storyContext.authorAciBinary)
     val sentTimestamp = storyContext.sentTimestamp!!
 
     SignalDatabase.messages.beginTransaction()
@@ -473,7 +477,7 @@ object DataMessageProcessor {
         body = emoji,
         groupId = groupId,
         quote = quoteModel,
-        serverGuid = envelope.serverGuid
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary)
       )
 
       val insertResult: InsertResult? = SignalDatabase.messages.insertMessageInbox(mediaMessage, -1).orNull()
@@ -517,7 +521,7 @@ object DataMessageProcessor {
 
     val emoji: String? = reaction.emoji
     val isRemove: Boolean = reaction.remove ?: false
-    val targetAuthorServiceId: ServiceId = ServiceId.parseOrThrow(reaction.targetAuthorAci!!)
+    val targetAuthorServiceId: ServiceId = ACI.parseOrThrow(reaction.targetAuthorAci, reaction.targetAuthorAciBinary)
     val targetSentTimestamp: Long = reaction.targetSentTimestamp!!
 
     if (targetAuthorServiceId.isUnknown) {
@@ -635,7 +639,7 @@ object DataMessageProcessor {
         receivedTimeMillis = receivedTime,
         expiresIn = message.expireTimerDuration.inWholeMilliseconds,
         isUnidentified = metadata.sealedSender,
-        serverGuid = envelope.serverGuid,
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
         type = if (isActivatePaymentsRequest) MessageType.ACTIVATE_PAYMENTS_REQUEST else MessageType.PAYMENTS_ACTIVATED
       )
 
@@ -686,7 +690,7 @@ object DataMessageProcessor {
         receivedTimeMillis = receivedTime,
         expiresIn = message.expireTimerDuration.inWholeMilliseconds,
         isUnidentified = metadata.sealedSender,
-        serverGuid = envelope.serverGuid,
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
         type = MessageType.PAYMENTS_NOTIFICATION
       )
 
@@ -726,7 +730,7 @@ object DataMessageProcessor {
     log(envelope.timestamp!!, "Story reply.")
 
     val storyContext: DataMessage.StoryContext = message.storyContext!!
-    val authorServiceId: ServiceId = ServiceId.parseOrThrow(storyContext.authorAci!!)
+    val authorServiceId: ServiceId = ACI.parseOrThrow(storyContext.authorAci, storyContext.authorAciBinary)
     val sentTimestamp: Long = if (storyContext.sentTimestamp != null) {
       storyContext.sentTimestamp!!
     } else {
@@ -786,7 +790,7 @@ object DataMessageProcessor {
         return null
       }
 
-      val bodyRanges: BodyRangeList? = message.bodyRanges.filter { it.mentionAci == null }.toList().toBodyRangeList()
+      val bodyRanges: BodyRangeList? = message.bodyRanges.filter { Util.allAreNull(it.mentionAci, it.mentionAciBinary) }.toList().toBodyRangeList()
 
       val mediaMessage = IncomingMessage(
         type = MessageType.NORMAL,
@@ -801,7 +805,7 @@ object DataMessageProcessor {
         groupId = groupId,
         quote = quoteModel,
         mentions = getMentions(message.bodyRanges),
-        serverGuid = envelope.serverGuid,
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
         messageRanges = bodyRanges
       )
 
@@ -866,7 +870,7 @@ object DataMessageProcessor {
         expiresIn = message.expireTimerDuration.inWholeMilliseconds,
         isUnidentified = metadata.sealedSender,
         body = Base64.encodeWithPadding(dbGiftBadge.encode()),
-        serverGuid = envelope.serverGuid,
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
         giftBadge = dbGiftBadge
       )
 
@@ -910,7 +914,7 @@ object DataMessageProcessor {
       val mentions: List<Mention> = getMentions(message.bodyRanges.take(BODY_RANGE_PROCESSING_LIMIT))
       val sticker: Attachment? = getStickerAttachment(envelope.timestamp!!, message)
       val attachments: List<Attachment> = message.attachments.toPointersWithinLimit()
-      val messageRanges: BodyRangeList? = if (message.bodyRanges.isNotEmpty()) message.bodyRanges.asSequence().take(BODY_RANGE_PROCESSING_LIMIT).filter { it.mentionAci == null }.toList().toBodyRangeList() else null
+      val messageRanges: BodyRangeList? = if (message.bodyRanges.isNotEmpty()) message.bodyRanges.asSequence().take(BODY_RANGE_PROCESSING_LIMIT).filter { Util.allAreNull(it.mentionAci, it.mentionAciBinary) }.toList().toBodyRangeList() else null
 
       handlePossibleExpirationUpdate(envelope, metadata, senderRecipient, threadRecipient, groupId, message.expireTimerDuration, message.expireTimerVersion, receivedTime)
 
@@ -930,7 +934,7 @@ object DataMessageProcessor {
         sharedContacts = contacts,
         linkPreviews = linkPreviews,
         mentions = mentions,
-        serverGuid = envelope.serverGuid,
+        serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
         messageRanges = messageRanges
       )
 
@@ -1006,7 +1010,7 @@ object DataMessageProcessor {
       groupId = groupId,
       expiresIn = message.expireTimerDuration.inWholeMilliseconds,
       isUnidentified = metadata.sealedSender,
-      serverGuid = envelope.serverGuid
+      serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary)
     )
 
     val insertResult: InsertResult? = SignalDatabase.messages.insertMessageInbox(textMessage).orNull()
@@ -1077,6 +1081,16 @@ object DataMessageProcessor {
       return null
     }
 
+    if (poll.question == null || poll.question!!.isEmpty() || poll.question!!.length > POLL_CHARACTER_LIMIT) {
+      warn(envelope.timestamp!!, "[handlePollCreate] Poll question is invalid.")
+      return null
+    }
+
+    if (poll.options.isEmpty() || poll.options.size > POLL_OPTIONS_LIMIT || poll.options.any { it.isEmpty() || it.length > POLL_CHARACTER_LIMIT }) {
+      warn(envelope.timestamp!!, "[handlePollCreate] Poll option is invalid.")
+      return null
+    }
+
     val pollMessage = IncomingMessage(
       type = MessageType.NORMAL,
       from = senderRecipient.id,
@@ -1086,7 +1100,7 @@ object DataMessageProcessor {
       groupId = groupId,
       expiresIn = message.expireTimerDuration.inWholeMilliseconds,
       isUnidentified = metadata.sealedSender,
-      serverGuid = envelope.serverGuid,
+      serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
       poll = Poll(
         question = poll.question!!,
         allowMultipleVotes = poll.allowMultiple!!,
@@ -1148,7 +1162,7 @@ object DataMessageProcessor {
       groupId = groupId,
       expiresIn = message.expireTimerDuration.inWholeMilliseconds,
       isUnidentified = metadata.sealedSender,
-      serverGuid = envelope.serverGuid,
+      serverGuid = UuidUtil.getStringUUID(envelope.serverGuid, envelope.serverGuidBinary),
       messageExtras = MessageExtras(pollTerminate = PollTerminate(poll.question, poll.messageId, targetSentTimestamp))
     )
 
@@ -1244,9 +1258,9 @@ object DataMessageProcessor {
 
   fun getMentions(mentionBodyRanges: List<BodyRange>): List<Mention> {
     return mentionBodyRanges
-      .filter { it.mentionAci != null && it.start != null && it.length != null }
+      .filter { Util.anyNotNull(it.mentionAci, it.mentionAciBinary) && it.start != null && it.length != null }
       .mapNotNull {
-        val aci = ACI.parseOrNull(it.mentionAci)
+        val aci = ACI.parseOrNull(it.mentionAci, it.mentionAciBinary)
 
         if (aci != null && !aci.isUnknown) {
           val id = Recipient.externalPush(aci).id
@@ -1279,7 +1293,7 @@ object DataMessageProcessor {
       return null
     }
 
-    val authorId = Recipient.externalPush(ServiceId.parseOrThrow(quote.authorAci!!)).id
+    val authorId = Recipient.externalPush(ACI.parseOrThrow(quote.authorAci, quote.authorAciBinary)).id
     var quotedMessage = SignalDatabase.messages.getMessageFor(quote.id!!, authorId) as? MmsMessageRecord
 
     if (quotedMessage != null && isSenderValid(quotedMessage, timestamp, senderRecipient, threadRecipient) && !quotedMessage.isRemoteDelete) {

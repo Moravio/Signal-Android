@@ -77,6 +77,7 @@ import org.thoughtcrime.securesms.polls.Voter
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.recipients.RecipientId
 import org.thoughtcrime.securesms.stickers.StickerLocator
+import org.thoughtcrime.securesms.util.Environment
 import org.thoughtcrime.securesms.util.JsonUtils
 import org.thoughtcrime.securesms.util.MessageUtil
 import org.whispersystems.signalservice.api.payments.Money
@@ -84,6 +85,7 @@ import org.whispersystems.signalservice.api.push.ServiceId
 import org.whispersystems.signalservice.api.util.UuidUtil
 import org.whispersystems.signalservice.internal.push.DataMessage
 import java.math.BigInteger
+import java.sql.SQLException
 import java.util.Optional
 import java.util.UUID
 import org.thoughtcrime.securesms.backup.v2.proto.GiftBadge as BackupGiftBadge
@@ -194,10 +196,13 @@ class ChatItemArchiveImporter(
       val originalId = messageId
       val latestRevisionId = originalId + chatItem.revisions.size
       val sortedRevisions = chatItem.revisions.sortedBy { it.dateSent }.map { it.toMessageInsert(fromLocalRecipientId, chatLocalRecipientId, localThreadId) }
+      val areAnyRevisionsRead = !Environment.IS_INSTRUMENTATION && ((messageInsert.contentValues.getAsInteger(MessageTable.READ) ?: 0) > 0 || sortedRevisions.any { (it.contentValues.getAsInteger(MessageTable.READ) ?: 0) > 0 })
       for (revision in sortedRevisions) {
         val revisionNumber = messageId - originalId
         if (revisionNumber > 0) {
           revision.contentValues.put(MessageTable.ORIGINAL_MESSAGE_ID, originalId)
+        } else if (areAnyRevisionsRead) {
+          revision.contentValues.put(MessageTable.READ, 1)
         }
         revision.contentValues.put(MessageTable.LATEST_REVISION_ID, latestRevisionId)
         revision.contentValues.put(MessageTable.REVISION_NUMBER, revisionNumber)
@@ -226,12 +231,17 @@ class ChatItemArchiveImporter(
     }
 
     var messageInsertIndex = 0
-    SqlUtil.buildBulkInsert(MessageTable.TABLE_NAME, MESSAGE_COLUMNS, buffer.messages.map { it.contentValues }).forEach { query ->
-      db.rawQuery("${query.where} RETURNING ${MessageTable.ID}", query.whereArgs).forEach { cursor ->
-        val finalMessageId = cursor.requireLong(MessageTable.ID)
-        val relatedInsert = buffer.messages[messageInsertIndex++]
-        relatedInsert.followUp?.invoke(finalMessageId)
+    try {
+      SqlUtil.buildBulkInsert(MessageTable.TABLE_NAME, MESSAGE_COLUMNS, buffer.messages.map { it.contentValues }, onConflict = "IGNORE").forEach { query ->
+        db.rawQuery("${query.where} RETURNING ${MessageTable.ID}", query.whereArgs).forEach { cursor ->
+          val finalMessageId = cursor.requireLong(MessageTable.ID)
+          val relatedInsert = buffer.messages[messageInsertIndex++]
+          relatedInsert.followUp?.invoke(finalMessageId)
+        }
       }
+    } catch (e: SQLException) {
+      Log.w(TAG, "Failed to bulk-insert message! Trying one at at time.", e)
+      performIndividualMessageInserts(buffer.messages)
     }
 
     SqlUtil.buildBulkInsert(ReactionTable.TABLE_NAME, REACTION_COLUMNS, buffer.reactions).forEach {
@@ -247,6 +257,18 @@ class ChatItemArchiveImporter(
     buffer.reset()
 
     return true
+  }
+
+  private fun performIndividualMessageInserts(messageInserts: List<MessageInsert>) {
+    for (message in messageInserts) {
+      val values = message.contentValues
+      try {
+        db.insert(MessageTable.TABLE_NAME, SQLiteDatabase.CONFLICT_IGNORE, values)
+        message.followUp?.invoke(messageId - 1)
+      } catch (e: SQLException) {
+        Log.w(TAG, "Failed to insert message with timestamp ${message.contentValues.get(MessageTable.DATE_SENT)}. Must skip.", e)
+      }
+    }
   }
 
   private fun ChatItem.toMessageInsert(fromRecipientId: RecipientId, chatRecipientId: RecipientId, threadId: Long): MessageInsert {
@@ -675,6 +697,7 @@ class ChatItemArchiveImporter(
       this.stickerMessage != null -> this.stickerMessage.reactions
       this.viewOnceMessage != null -> this.viewOnceMessage.reactions
       this.directStoryReplyMessage != null -> this.directStoryReplyMessage.reactions
+      this.poll != null -> this.poll.reactions
       else -> emptyList()
     }
 
@@ -727,14 +750,14 @@ class ChatItemArchiveImporter(
 
   private fun ChatItem.getMessageType(): Long {
     var type: Long = if (this.outgoing != null) {
-      if (this.outgoing.sendStatus.any { it.failed?.reason == SendStatus.Failed.FailureReason.IDENTITY_KEY_MISMATCH }) {
+      if (this.outgoing.sendStatus.any { it.pending != null }) {
+        MessageTypes.BASE_SENDING_TYPE
+      } else if (this.outgoing.sendStatus.any { it.failed?.reason == SendStatus.Failed.FailureReason.IDENTITY_KEY_MISMATCH }) {
         MessageTypes.BASE_SENT_FAILED_TYPE
       } else if (this.outgoing.sendStatus.any { it.failed?.reason == SendStatus.Failed.FailureReason.UNKNOWN }) {
         MessageTypes.BASE_SENT_FAILED_TYPE
       } else if (this.outgoing.sendStatus.any { it.failed?.reason == SendStatus.Failed.FailureReason.NETWORK }) {
         MessageTypes.BASE_SENT_FAILED_TYPE
-      } else if (this.outgoing.sendStatus.any { it.pending != null }) {
-        MessageTypes.BASE_SENDING_TYPE
       } else if (this.outgoing.sendStatus.all { it.skipped != null }) {
         MessageTypes.BASE_SENDING_SKIPPED_TYPE
       } else {
@@ -1053,6 +1076,7 @@ class ChatItemArchiveImporter(
       Quote.Type.NORMAL -> QuoteModel.Type.NORMAL.code
       Quote.Type.GIFT_BADGE -> QuoteModel.Type.GIFT_BADGE.code
       Quote.Type.VIEW_ONCE -> QuoteModel.Type.NORMAL.code
+      Quote.Type.POLL -> QuoteModel.Type.POLL.code
     }
   }
 
@@ -1259,8 +1283,7 @@ class ChatItemArchiveImporter(
 
   private class MessageInsert(
     val contentValues: ContentValues,
-    val followUp: ((Long) -> Unit)?,
-    val edits: List<MessageInsert>? = null
+    val followUp: ((Long) -> Unit)?
   )
 
   private class Buffer(
