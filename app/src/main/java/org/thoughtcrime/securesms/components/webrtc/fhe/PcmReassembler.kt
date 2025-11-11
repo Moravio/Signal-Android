@@ -12,9 +12,8 @@ class PcmReassembler {
   /**
    * @return Pair<pcm, Meta> when a full message is ready, else null
    */
-  fun onChunk(data: ByteArray): Pair<ByteArray, Meta>? {
+  fun onChunk(data: ByteArray): Pair<FloatArray, Meta>? {
     val bb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN)
-
     val seqId = bb.int
     val idx = bb.short.toInt() and 0xFFFF
     val total = bb.short.toInt() and 0xFFFF
@@ -41,9 +40,25 @@ class PcmReassembler {
         o += p.size
       }
       inbox.remove(seqId)
-      return pcm to Meta(sampleRate, channels)
+      val decoded = FHEService.decrypt(pcm)
+//      val decoded = bytesToFloats(pcm)
+      return decoded to Meta(sampleRate, channels)
     }
     return null
+  }
+
+  private fun bytesToFloats(bytes: ByteArray): FloatArray {
+    val bb = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+    val fb = bb.asFloatBuffer()
+    val out = FloatArray(fb.remaining())
+    fb.get(out)
+    return out
+  }
+
+  private fun floatsToBytes(src: FloatArray): ByteArray {
+    val bb = ByteBuffer.allocate(src.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+    bb.asFloatBuffer().put(src, 0, src.size)
+    return bb.array()
   }
 
   data class Meta(val sampleRate: Int, val channels: Int)

@@ -9,7 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.max
 
 class PcmPlayer {
-  private val queue = LinkedBlockingQueue<Pair<ByteArray, Meta>>()
+  private val queue = LinkedBlockingQueue<Pair<FloatArray, Meta>>()
 
   private var track: AudioTrack? = null
 
@@ -39,7 +39,7 @@ class PcmPlayer {
     queue.clear()
   }
 
-  fun enqueue(pcm: ByteArray, sampleRate: Int, channels: Int) {
+  fun enqueue(pcm: FloatArray, sampleRate: Int, channels: Int) {
     queue.offer(pcm to Meta(sampleRate, channels))
   }
 
@@ -60,10 +60,10 @@ class PcmPlayer {
     }
 
     val minBuf = AudioTrack.getMinBufferSize(
-      meta.sampleRate, chOut, AudioFormat.ENCODING_PCM_16BIT
+      meta.sampleRate, chOut, AudioFormat.ENCODING_PCM_FLOAT
     )
 
-    val bufferSize = max(minBuf, meta.sampleRate * meta.channels * 2 / 5)
+    val bufferSize = max(minBuf, meta.sampleRate / 1000 * 90 * meta.channels * 4 * 2)
 
     track = AudioTrack.Builder()
       .setAudioAttributes(
@@ -75,7 +75,7 @@ class PcmPlayer {
       .setAudioFormat(
         AudioFormat.Builder()
           .setSampleRate(meta.sampleRate)
-          .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+          .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
           .setChannelMask(chOut)
           .build()
       )

@@ -18,13 +18,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import org.signal.core.util.logging.Log
-import org.thoughtcrime.securesms.jobs.ApkUpdateJob.UpdateDescriptor
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.util.JsonUtils
 import java.io.IOException
@@ -36,13 +35,15 @@ import kotlin.math.min
 class FheGroupCall(val context: Context, val groupId: String) {
   private val TAG: String = Log.tag(FheGroupCall::class.java)
 
-  private val sampleRate = 48000
+  private val sampleRate = 11025
 
   private val channels = 1
 
+  private val frameDurationMs = 90
+
   private val room = LiveKit.create(context)
 
-  private val recorder = PcmRecorder(sampleRate, channels)
+  private val recorder = PcmRecorder(sampleRate, channels, frameDurationMs)
 
   private val pcmReassembler = PcmReassembler()
 
@@ -50,7 +51,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
   private val scope = CoroutineScope(Dispatchers.IO)
 
-  val seq = AtomicInteger(0)
+  val frameSeq = AtomicInteger(0)
 
   data class TokenResponse(val url: String, val token: String)
 
@@ -64,7 +65,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
     val tokenUrl = HttpUrl.Builder()
       .scheme("https")
-      .host("rich-houses-march.loca.lt")
+      .host("dark-trams-like.loca.lt")
       .addPathSegment("getToken")
       .addQueryParameter("roomName", groupId)
       .addQueryParameter("identity", Recipient.self().aci.toString())
@@ -110,8 +111,8 @@ class FheGroupCall(val context: Context, val groupId: String) {
       }
 
       room.events.collect { event ->
-        if (event is RoomEvent.DataReceived && event.topic == "pcm") {
-//          Log.i(TAG, "Received PCM")
+        if (event is RoomEvent.DataReceived && event.topic == "audio") {
+          Log.i(TAG, "Received audio data ${event.data.size}")
 
           val result = pcmReassembler.onChunk(event.data)
 
@@ -120,6 +121,32 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
             player.enqueue(pcm, meta.sampleRate, meta.channels)
           }
+        }
+
+        if (event is RoomEvent.ParticipantConnected) {
+          val pubKey = context.assets.open("keys/key_pub.bin").use { input ->
+            input.readBytes()
+          }
+
+          val cryptoContext = context.assets.open("keys/crypto_context.bin").use { input ->
+            input.readBytes()
+          }
+
+          val packet = ByteBuffer.allocate(8 + cryptoContext.size + pubKey.size)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .putInt(pubKey.size)
+            .putInt(cryptoContext.size)
+            .put(pubKey)
+            .put(cryptoContext)
+            .array()
+
+          Log.i(TAG, "Sending system packet of size ${packet.size}")
+
+          room.localParticipant.publishData(
+            data = packet,
+            reliability = DataPublishReliability.RELIABLE,
+            topic = "system"
+          )
         }
 
         if (event is RoomEvent.Disconnected) {
@@ -135,7 +162,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
   private fun startRecording()
   {
     scope.launch {
-      recorder.start { pcm -> sendPcm(pcm) }
+      recorder.start { audioFrame -> sendAudioFrame(audioFrame) }
     }
   }
 
@@ -158,40 +185,73 @@ class FheGroupCall(val context: Context, val groupId: String) {
     room.disconnect()
   }
 
-  suspend fun sendPcm(pcm: ByteArray) {
-    val headerSize = 4 + 2 + 2 + 4 + 1 // seq, idx, total, sr, ch
-    val mtu = 1300 // 1400 is MTU
-    val maxChunk = mtu - headerSize
-    val total = ((pcm.size + maxChunk - 1) / maxChunk).toShort()
-    val seqId = seq.getAndIncrement()
+  private fun floatsToBytes(src: FloatArray): ByteArray {
+    val bb = ByteBuffer.allocate(src.size * 4).order(ByteOrder.LITTLE_ENDIAN)
+    bb.asFloatBuffer().put(src, 0, src.size)
+    return bb.array()
+  }
 
-    var off = 0
+  @Serializable
+  data class AudioMetaData(
+    val id: Int,
+    val chunkIdx: Int,
+    val totalChunks: Int,
+    val sampleRate: Int,
+    val duration: Int,
+    val channels: Int,
+    val timestamp: Long,
+    val speakers: List<String>
+  )
+
+  suspend fun sendAudioFrame(audioFrame: FloatArray) {
+    val encryptedFrame = FHEService.encrypt(audioFrame)
+//    val encryptedFrame = floatsToBytes(pcm);
+
+    // Livekit has 15KiB max data packet size
+    val maxChunkBytes = 14000
+    val totalChunks = (encryptedFrame.size + maxChunkBytes - 1) / maxChunkBytes
+    val frameId = frameSeq.getAndIncrement()
+
+    var offset = 0
     var idx = 0
 
-    while (off < pcm.size) {
-      val take = min(maxChunk, pcm.size - off)
-      val header = ByteBuffer.allocate(headerSize).order(ByteOrder.LITTLE_ENDIAN)
-        .putInt(seqId)
-        .putShort(idx.toShort())
-        .putShort(total)
-        .putInt(sampleRate)
-        .put(channels.toByte())
-        .array();
+    while (offset < encryptedFrame.size) {
+      val metadata = AudioMetaData(
+        id = frameId,
+        chunkIdx = idx,
+        totalChunks = totalChunks,
+        sampleRate = sampleRate,
+        duration = frameDurationMs,
+        channels = channels,
+        timestamp = System.currentTimeMillis(),
+        speakers = listOf()
+      )
 
-      val payload = ByteArray(header.size + take)
-      System.arraycopy(header, 0, payload, 0, header.size)
-      System.arraycopy(pcm, off, payload, header.size, take)
+      val json = Json { encodeDefaults = true }
+      val metadataBytes = json.encodeToString(metadata).toByteArray(Charsets.UTF_8)
+
+      val end = minOf(offset + maxChunkBytes, encryptedFrame.size)
+      val dataChunk = encryptedFrame.sliceArray(offset until end)
+
+      val packet = ByteBuffer.allocate(4 + metadataBytes.size + dataChunk.size)
+        .order(ByteOrder.LITTLE_ENDIAN)
+        .putInt(metadataBytes.size)
+        .put(metadataBytes)
+        .put(dataChunk)
 
       try {
         if (room.state == Room.State.CONNECTED) {
-//          Log.i(TAG, "Sending PCM")
-          room.localParticipant.publishData(data = payload, reliability = DataPublishReliability.LOSSY, topic = "pcm")
+          room.localParticipant.publishData(
+            data = packet.array(),
+            reliability = DataPublishReliability.RELIABLE,
+            topic = "audio"
+          )
         }
       } catch (e: RoomException) {
         Log.e(TAG, e.message)
       }
 
-      off += take
+      offset += maxChunkBytes
       idx++
     }
   }

@@ -70,16 +70,16 @@ void createCryptoContext(JNIEnv* env, jclass clazz, jstring outDirJ)
     const std::string pubPath = outDir + "/key_pub.bin";
     const std::string secPath = outDir + "/key_priv.bin";
 
-    if (!lbcrypto::Serial::SerializeToFile(ctxPath, cryptoContext, lbcrypto::SerType::JSON)) {
+    if (!lbcrypto::Serial::SerializeToFile(ctxPath, cryptoContext, lbcrypto::SerType::BINARY)) {
         __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Failed to write %s", ctxPath.c_str());
         return;
     }
 
-    if (!lbcrypto::Serial::SerializeToFile(pubPath, kp.publicKey, lbcrypto::SerType::JSON)) {
+    if (!lbcrypto::Serial::SerializeToFile(pubPath, kp.publicKey, lbcrypto::SerType::BINARY)) {
         __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Failed to write %s", pubPath.c_str());
         return;
     }
-    if (!lbcrypto::Serial::SerializeToFile(secPath, kp.secretKey, lbcrypto::SerType::JSON)) {
+    if (!lbcrypto::Serial::SerializeToFile(secPath, kp.secretKey, lbcrypto::SerType::BINARY)) {
         __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Failed to write %s", secPath.c_str());
         return;
     }
@@ -120,7 +120,7 @@ void loadKeys(JNIEnv* env, jclass clazz, jobject assetManager)
 
         auto ctxStream = assetToStream(mgr, CRYPTO_CONTEXT_FILE.c_str());
 
-        lbcrypto::Serial::Deserialize(cryptoContext, ctxStream, lbcrypto::SerType::JSON);
+        lbcrypto::Serial::Deserialize(cryptoContext, ctxStream, lbcrypto::SerType::BINARY);
 
         __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "Crypto Context loaded");
 
@@ -128,7 +128,7 @@ void loadKeys(JNIEnv* env, jclass clazz, jobject assetManager)
 
         auto pubKeyStream = assetToStream(mgr, PUBLIC_KEY_FILE.c_str());
 
-        lbcrypto::Serial::Deserialize(publicKey, pubKeyStream, lbcrypto::SerType::JSON);
+        lbcrypto::Serial::Deserialize(publicKey, pubKeyStream, lbcrypto::SerType::BINARY);
 
         __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "Public key loaded");
 
@@ -136,7 +136,7 @@ void loadKeys(JNIEnv* env, jclass clazz, jobject assetManager)
 
         auto secretKeyStream = assetToStream(mgr, SECRET_KEY_FILE.c_str());
 
-        lbcrypto::Serial::Deserialize(secretKey, secretKeyStream, lbcrypto::SerType::JSON);
+        lbcrypto::Serial::Deserialize(secretKey, secretKeyStream, lbcrypto::SerType::BINARY);
 
         __android_log_print(ANDROID_LOG_INFO, LOG_TAG, "Secret key loaded");
     }
@@ -180,7 +180,7 @@ jbyteArray encrypt(JNIEnv* env, jclass clazz, jfloatArray inputData)
     std::string encryptedStr = oss.str();
 
     jbyteArray result = env->NewByteArray(encryptedStr.size());
-    env->SetByteArrayRegion(result, 0, encryptedStr.size(),reinterpret_cast<const jbyte*>(encryptedStr.data()));
+    env->SetByteArrayRegion(result, 0, encryptedStr.size(), reinterpret_cast<const jbyte*>(encryptedStr.data()));
 
     return result;
 }

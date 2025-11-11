@@ -8,6 +8,8 @@ package org.thoughtcrime.securesms.components.webrtc.fhe
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.os.Build
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
@@ -17,46 +19,49 @@ import kotlin.math.max
 
 class PcmRecorder(
   val sampleRate: Int,
-  val channels: Int
+  val channels: Int,
+  val frameDurationMs: Int
 ) {
   private val TAG: String = Log.tag(PcmRecorder::class.java)
-
-  private val frameMs: Int = 20
 
   private var record: AudioRecord? = null
 
   private var job: Job? = null
 
-  suspend fun start(onPcm: suspend (ByteArray) -> Unit) = coroutineScope {
+  @RequiresApi(Build.VERSION_CODES.M)
+  suspend fun start(onAudioFrame: suspend (FloatArray) -> Unit) = coroutineScope {
     stop()
 
     val channelConfig = if (channels == 1) AudioFormat.CHANNEL_IN_MONO else AudioFormat.CHANNEL_IN_STEREO
 
     val minBuf = AudioRecord.getMinBufferSize(
-      sampleRate, channelConfig, AudioFormat.ENCODING_PCM_16BIT
+      sampleRate, channelConfig, AudioFormat.ENCODING_PCM_FLOAT
     )
 
-    val bytesPerFrame = sampleRate * frameMs / 1000 * channels * 2
+    val samplesPerFrame = sampleRate / 1000 * frameDurationMs
+    val bytesPerFrame = samplesPerFrame * channels * 4
     val bufferSize = max(minBuf, bytesPerFrame * 2)
 
+    Log.i(TAG, "Starting audio record [bufferSizeInBytes=${bytesPerFrame}]")
+
     record = AudioRecord(
-      MediaRecorder.AudioSource.VOICE_COMMUNICATION,
+      MediaRecorder.AudioSource.MIC,
       sampleRate,
       channelConfig,
-      AudioFormat.ENCODING_PCM_16BIT,
+      AudioFormat.ENCODING_PCM_FLOAT,
       bufferSize
     )
 
     record?.startRecording()
 
-    val buf = ByteArray(bytesPerFrame)
+    val buf = FloatArray(samplesPerFrame)
 
     job = launch {
       while (isActive) {
-        val n = record!!.read(buf, 0, buf.size)
+        val totalRead = record!!.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
 
-        if (n > 0) {
-          onPcm(if (n == buf.size) buf else buf.copyOf(n))
+        if (totalRead > 0) {
+          onAudioFrame(buf)
         }
       }
     }
