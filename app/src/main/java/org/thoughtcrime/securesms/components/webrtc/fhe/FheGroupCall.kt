@@ -11,6 +11,7 @@ import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.Room
 import io.livekit.android.room.RoomException
+import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -114,39 +115,47 @@ class FheGroupCall(val context: Context, val groupId: String) {
         if (event is RoomEvent.DataReceived && event.topic == "audio") {
           Log.i(TAG, "Received audio data ${event.data.size}")
 
-          val result = pcmReassembler.onChunk(event.data)
+          val packet = event.data
 
-          if (result != null) {
-            val (pcm, meta) = result
+          val buffer = ByteBuffer.wrap(packet).order(ByteOrder.LITTLE_ENDIAN)
+          val metaLen = buffer.int
 
-            player.enqueue(pcm, meta.sampleRate, meta.channels)
+          val metaBytes = packet.copyOfRange(4, 4 + metaLen)
+          val jsonString = metaBytes.toString(Charsets.UTF_8)
+
+          val json = Json { ignoreUnknownKeys = true }
+          val metadata = json.decodeFromString(AudioMetaData.serializer(), jsonString)
+
+          Log.i(TAG, "metadata ${metadata}")
+
+          val payload = packet.copyOfRange(4 + metaLen, packet.size)
+
+          Log.i(TAG, "payload size ${payload.size}")
+
+
+//          val result = pcmReassembler.onChunk(event.data)
+//
+//          if (result != null) {
+//            val (pcm, meta) = result
+//
+//            player.enqueue(pcm, meta.sampleRate, meta.channels)
+//          }
+        }
+
+        if (event is RoomEvent.Connected) {
+          Log.i(TAG, "Running RoomEvent.Connected event handler")
+
+          if (room.remoteParticipants.containsKey(Participant.Identity("mixer"))) {
+            sendSystemPacket()
           }
         }
 
         if (event is RoomEvent.ParticipantConnected) {
-          val pubKey = context.assets.open("keys/key_pub.bin").use { input ->
-            input.readBytes()
+          Log.i(TAG, "Running RoomEvent.ParticipantConnected event handler")
+
+          if (event.participant.identity?.value == "mixer") {
+            sendSystemPacket()
           }
-
-          val cryptoContext = context.assets.open("keys/crypto_context.bin").use { input ->
-            input.readBytes()
-          }
-
-          val packet = ByteBuffer.allocate(8 + cryptoContext.size + pubKey.size)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .putInt(pubKey.size)
-            .putInt(cryptoContext.size)
-            .put(pubKey)
-            .put(cryptoContext)
-            .array()
-
-          Log.i(TAG, "Sending system packet of size ${packet.size}")
-
-          room.localParticipant.publishData(
-            data = packet,
-            reliability = DataPublishReliability.RELIABLE,
-            topic = "system"
-          )
         }
 
         if (event is RoomEvent.Disconnected) {
@@ -185,6 +194,33 @@ class FheGroupCall(val context: Context, val groupId: String) {
     room.disconnect()
   }
 
+  suspend fun sendSystemPacket() {
+    val pubKey = context.assets.open("keys/key_pub.bin").use { input ->
+      input.readBytes()
+    }
+
+    val cryptoContext = context.assets.open("keys/crypto_context.bin").use { input ->
+      input.readBytes()
+    }
+
+    val packet = ByteBuffer.allocate(8 + cryptoContext.size + pubKey.size)
+      .order(ByteOrder.LITTLE_ENDIAN)
+      .putInt(pubKey.size)
+      .putInt(cryptoContext.size)
+      .put(pubKey)
+      .put(cryptoContext)
+      .array()
+
+    Log.i(TAG, "Sending system packet of size ${packet.size}")
+
+    room.localParticipant.publishData(
+      data = packet,
+      reliability = DataPublishReliability.RELIABLE,
+      topic = "system",
+      identities = listOf(Participant.Identity("mixer"))
+    )
+  }
+
   private fun floatsToBytes(src: FloatArray): ByteArray {
     val bb = ByteBuffer.allocate(src.size * 4).order(ByteOrder.LITTLE_ENDIAN)
     bb.asFloatBuffer().put(src, 0, src.size)
@@ -194,8 +230,8 @@ class FheGroupCall(val context: Context, val groupId: String) {
   @Serializable
   data class AudioMetaData(
     val id: Int,
-    val chunkIdx: Int,
-    val totalChunks: Int,
+    val chunkIdx: Int? = null,
+    val totalChunks: Int? = null,
     val sampleRate: Int,
     val duration: Int,
     val channels: Int,
@@ -238,13 +274,17 @@ class FheGroupCall(val context: Context, val groupId: String) {
         .putInt(metadataBytes.size)
         .put(metadataBytes)
         .put(dataChunk)
+        .array()
 
       try {
         if (room.state == Room.State.CONNECTED) {
+          Log.i(TAG, "Sending audio data of len ${packet.size}")
+
           room.localParticipant.publishData(
-            data = packet.array(),
+            data = packet,
             reliability = DataPublishReliability.RELIABLE,
-            topic = "audio"
+            topic = "audio",
+            identities = listOf(Participant.Identity("mixer"))
           )
         }
       } catch (e: RoomException) {
