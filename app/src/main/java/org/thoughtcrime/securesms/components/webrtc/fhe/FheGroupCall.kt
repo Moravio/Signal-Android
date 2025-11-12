@@ -10,7 +10,6 @@ import io.livekit.android.LiveKit
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.Room
-import io.livekit.android.room.RoomException
 import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +30,6 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.min
 
 class FheGroupCall(val context: Context, val groupId: String) {
   private val TAG: String = Log.tag(FheGroupCall::class.java)
@@ -52,9 +50,28 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
   private val scope = CoroutineScope(Dispatchers.IO)
 
-  val frameSeq = AtomicInteger(0)
+  private val frameSeq = AtomicInteger(0)
+
+  @Volatile private var mixerHandshakeDone = false
 
   data class TokenResponse(val url: String, val token: String)
+
+  @Serializable
+  data class MixerAckMessage(
+    val success: Boolean
+  )
+
+  @Serializable
+  data class AudioMetaData(
+    val id: Int,
+    val chunkIdx: Int? = null,
+    val totalChunks: Int? = null,
+    val sampleRate: Int,
+    val duration: Float,
+    val channels: Int,
+    val timestamp: Long,
+    val speakers: List<String>
+  )
 
   init {
     FHEService.loadKeys(context.assets)
@@ -66,7 +83,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
     val tokenUrl = HttpUrl.Builder()
       .scheme("https")
-      .host("dark-trams-like.loca.lt")
+      .host("little-views-argue.loca.lt")
       .addPathSegment("getToken")
       .addQueryParameter("roomName", groupId)
       .addQueryParameter("identity", Recipient.self().aci.toString())
@@ -98,54 +115,70 @@ class FheGroupCall(val context: Context, val groupId: String) {
       }
 
       launch {
-        while (isActive) {
-          try {
-            if (room.state == Room.State.CONNECTED) {
-              room.localParticipant.publishData("Ping".toByteArray(Charsets.US_ASCII), reliability = DataPublishReliability.RELIABLE)
-            }
-          } catch (e: RoomException) {
-            Log.e(TAG, e.message)
-          }
-
-          delay(5000)
-        }
+//        while (isActive) {
+//          try {
+//            if (room.state == Room.State.CONNECTED) {
+//              room.localParticipant.publishData("Ping".toByteArray(Charsets.US_ASCII), reliability = DataPublishReliability.RELIABLE)
+//            }
+//          } catch (e: RoomException) {
+//            Log.e(TAG, e.message)
+//          }
+//
+//          delay(5000)
+//        }
       }
 
       room.events.collect { event ->
         if (event is RoomEvent.DataReceived && event.topic == "audio") {
-          Log.i(TAG, "Received audio data ${event.data.size}")
+          Log.d(TAG, "Received audio data ${event.data.size}")
 
-          val packet = event.data
+          try {
+            val packet = event.data
 
-          val buffer = ByteBuffer.wrap(packet).order(ByteOrder.LITTLE_ENDIAN)
-          val metaLen = buffer.int
+            val buffer = ByteBuffer.wrap(packet).order(ByteOrder.LITTLE_ENDIAN)
+            val metaLen = buffer.int
 
-          val metaBytes = packet.copyOfRange(4, 4 + metaLen)
-          val jsonString = metaBytes.toString(Charsets.UTF_8)
+            val metaBytes = packet.copyOfRange(4, 4 + metaLen)
+            val jsonString = metaBytes.toString(Charsets.UTF_8)
 
+            val json = Json { ignoreUnknownKeys = true }
+            val metadata = json.decodeFromString(AudioMetaData.serializer(), jsonString)
+
+            Log.i(TAG, "metadata ${metadata}")
+
+            val payload = packet.copyOfRange(4 + metaLen, packet.size)
+
+            Log.i(TAG, "payload size ${payload.size}")
+
+            player.enqueue(
+              FHEService.decrypt(payload),
+              metadata.sampleRate,
+              metadata.channels
+            )
+          } catch (e: Exception ) {
+            Log.e(TAG, e.message)
+          }
+        }
+
+        if (event is RoomEvent.DataReceived && event.topic == "system") {
+          Log.d(TAG, "Received system data ${event.data.size}")
+
+          val jsonString = event.data.toString(Charsets.UTF_8)
           val json = Json { ignoreUnknownKeys = true }
-          val metadata = json.decodeFromString(AudioMetaData.serializer(), jsonString)
 
-          Log.i(TAG, "metadata ${metadata}")
+          val ackMessage = json.decodeFromString(MixerAckMessage.serializer(), jsonString)
 
-          val payload = packet.copyOfRange(4 + metaLen, packet.size)
+          Log.d(TAG, "ackMessage ${ackMessage}")
 
-          Log.i(TAG, "payload size ${payload.size}")
-
-
-//          val result = pcmReassembler.onChunk(event.data)
-//
-//          if (result != null) {
-//            val (pcm, meta) = result
-//
-//            player.enqueue(pcm, meta.sampleRate, meta.channels)
-//          }
+          if (ackMessage.success) {
+            mixerHandshakeDone = true
+          }
         }
 
         if (event is RoomEvent.Connected) {
           Log.i(TAG, "Running RoomEvent.Connected event handler")
 
-          if (room.remoteParticipants.containsKey(Participant.Identity("mixer"))) {
+          if (mixerConnected()) {
             sendSystemPacket()
           }
         }
@@ -153,7 +186,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
         if (event is RoomEvent.ParticipantConnected) {
           Log.i(TAG, "Running RoomEvent.ParticipantConnected event handler")
 
-          if (event.participant.identity?.value == "mixer") {
+          if (mixerConnected()) {
             sendSystemPacket()
           }
         }
@@ -167,6 +200,25 @@ class FheGroupCall(val context: Context, val groupId: String) {
       }
     }
   }
+
+  private fun requireMixer(): Participant.Identity
+  {
+    val mixer = room.remoteParticipants.keys.firstOrNull { it.value.startsWith("mixer") }!!
+
+//    Log.d(TAG, "mixer: $mixer")
+
+    return mixer
+  }
+
+  private fun mixerConnected(): Boolean
+  {
+    val connected = room.remoteParticipants.keys.any { it.value.startsWith("mixer") }
+
+//    Log.d(TAG, "mixerConnected: $connected")
+
+    return connected
+  }
+
 
   private fun startRecording()
   {
@@ -182,6 +234,8 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
   fun setOutgoingAudioMuted(muted: Boolean)
   {
+    Log.i(TAG, "setOutgoingAudioMuted $muted")
+
     if (muted) {
       stopRecording();
     } else {
@@ -203,22 +257,47 @@ class FheGroupCall(val context: Context, val groupId: String) {
       input.readBytes()
     }
 
-    val packet = ByteBuffer.allocate(8 + cryptoContext.size + pubKey.size)
-      .order(ByteOrder.LITTLE_ENDIAN)
-      .putInt(pubKey.size)
-      .putInt(cryptoContext.size)
-      .put(pubKey)
-      .put(cryptoContext)
-      .array()
+    val payload = ByteArray(pubKey.size + cryptoContext.size)
 
-    Log.i(TAG, "Sending system packet of size ${packet.size}")
+    System.arraycopy(pubKey, 0, payload, 0, pubKey.size)
+    System.arraycopy(cryptoContext, 0, payload, pubKey.size, cryptoContext.size)
 
-    room.localParticipant.publishData(
-      data = packet,
-      reliability = DataPublishReliability.RELIABLE,
-      topic = "system",
-      identities = listOf(Participant.Identity("mixer"))
-    )
+    val maxChunkBytes = 14000
+    var offset = 0;
+
+    while (offset < payload.size) {
+      val end = minOf(offset + maxChunkBytes,  payload.size)
+      val dataChunk = payload.sliceArray(offset until end)
+
+      val packet = if (offset == 0)
+          ByteBuffer.allocate(8 + dataChunk.size)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .putInt(pubKey.size)
+            .putInt(cryptoContext.size)
+            .put(dataChunk)
+            .array()
+          else
+            ByteBuffer.allocate(dataChunk.size)
+              .order(ByteOrder.LITTLE_ENDIAN)
+              .put(dataChunk)
+              .array()
+
+      Log.i(TAG, "Sending system packet of size ${packet.size}")
+
+      try {
+        room.localParticipant.publishData(
+          data = packet,
+          reliability = DataPublishReliability.RELIABLE,
+          topic = "system",
+          identities = listOf(requireMixer())
+        )
+      } catch (e: Exception) {
+        Log.e(TAG, e.message)
+      }
+
+      offset += maxChunkBytes
+    }
+
   }
 
   private fun floatsToBytes(src: FloatArray): ByteArray {
@@ -226,18 +305,6 @@ class FheGroupCall(val context: Context, val groupId: String) {
     bb.asFloatBuffer().put(src, 0, src.size)
     return bb.array()
   }
-
-  @Serializable
-  data class AudioMetaData(
-    val id: Int,
-    val chunkIdx: Int? = null,
-    val totalChunks: Int? = null,
-    val sampleRate: Int,
-    val duration: Int,
-    val channels: Int,
-    val timestamp: Long,
-    val speakers: List<String>
-  )
 
   suspend fun sendAudioFrame(audioFrame: FloatArray) {
     val encryptedFrame = FHEService.encrypt(audioFrame)
@@ -257,7 +324,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
         chunkIdx = idx,
         totalChunks = totalChunks,
         sampleRate = sampleRate,
-        duration = frameDurationMs,
+        duration = frameDurationMs.toFloat(),
         channels = channels,
         timestamp = System.currentTimeMillis(),
         speakers = listOf()
@@ -277,17 +344,17 @@ class FheGroupCall(val context: Context, val groupId: String) {
         .array()
 
       try {
-        if (room.state == Room.State.CONNECTED) {
-          Log.i(TAG, "Sending audio data of len ${packet.size}")
+        if (room.state == Room.State.CONNECTED && mixerConnected() && mixerHandshakeDone) {
+          Log.d(TAG, "Sending audio data of len ${packet.size}")
 
           room.localParticipant.publishData(
             data = packet,
             reliability = DataPublishReliability.RELIABLE,
             topic = "audio",
-            identities = listOf(Participant.Identity("mixer"))
+            identities = listOf(requireMixer())
           )
         }
-      } catch (e: RoomException) {
+      } catch (e: Exception) {
         Log.e(TAG, e.message)
       }
 

@@ -60,6 +60,8 @@ class PcmRecorder(
       while (isActive) {
         val totalRead = record!!.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
 
+//        Log.d(TAG, "AudioRecord read $totalRead bytes")
+
         if (totalRead > 0) {
           onAudioFrame(buf)
         }

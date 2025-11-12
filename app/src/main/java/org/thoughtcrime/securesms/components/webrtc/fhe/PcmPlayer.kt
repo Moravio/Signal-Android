@@ -39,8 +39,8 @@ class PcmPlayer {
     queue.clear()
   }
 
-  fun enqueue(pcm: FloatArray, sampleRate: Int, channels: Int) {
-    queue.offer(pcm to Meta(sampleRate, channels))
+  fun enqueue(audioData: FloatArray, sampleRate: Int, channels: Int) {
+    queue.offer(audioData to Meta(sampleRate, channels))
   }
 
   @SuppressLint("NewApi")
