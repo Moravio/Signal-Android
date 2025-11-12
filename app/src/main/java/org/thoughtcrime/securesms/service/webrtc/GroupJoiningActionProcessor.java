@@ -76,7 +76,7 @@ public class GroupJoiningActionProcessor extends GroupActionProcessor {
 
           try {
             groupCall.setOutgoingVideoMuted(!currentState.getLocalDeviceState().getCameraState().isEnabled());
-            groupCall.setOutgoingAudioMuted(!currentState.getLocalDeviceState().isMicrophoneEnabled());
+            groupCall.setOutgoingAudioMuted(true);
             groupCall.setDataMode(NetworkUtil.getCallingDataMode(context, device.getNetworkRoute().getLocalAdapterType()));
           } catch (CallException e) {
             Log.e(tag, e);
@@ -167,7 +167,7 @@ public class GroupJoiningActionProcessor extends GroupActionProcessor {
   @Override
   protected @NonNull WebRtcServiceState handleSetMuteAudio(@NonNull WebRtcServiceState currentState, boolean muted) {
     try {
-      currentState.getCallInfoState().requireGroupCall().setOutgoingAudioMuted(muted);
+      currentState.getCallInfoState().requireGroupCall().setOutgoingAudioMuted(true);
     } catch (CallException e) {
       return groupCallFailure(currentState, "Unable to set audio muted", e);
     }

@@ -143,6 +143,9 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
         } catch (CallException e) {
           return groupCallFailure(currentState, "Unable to set attribution of remote mute", e);
         }
+
+        currentState.getCallInfoState().requireFheGroupCall().setOutgoingAudioMuted(true);
+
         return currentState.builder().changeLocalDeviceState().setRemoteMutedBy(entry.getValue()).build();
       }
     }

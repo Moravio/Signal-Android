@@ -14,8 +14,6 @@ import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.track.DataPublishReliability
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
@@ -32,7 +30,9 @@ import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicInteger
 
 class FheGroupCall(val context: Context, val groupId: String) {
-  private val TAG: String = Log.tag(FheGroupCall::class.java)
+  companion object {
+    private val TAG: String = Log.tag(FheGroupCall::class.java)
+  }
 
   private val sampleRate = 11025
 
@@ -43,8 +43,6 @@ class FheGroupCall(val context: Context, val groupId: String) {
   private val room = LiveKit.create(context)
 
   private val recorder = PcmRecorder(sampleRate, channels, frameDurationMs)
-
-  private val pcmReassembler = PcmReassembler()
 
   private val player = PcmPlayer()
 
@@ -79,42 +77,20 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
   fun connect()
   {
-    val client = OkHttpClient()
+    Log.i(TAG, "Connecting to LiveKit [roomName=$groupId]")
 
-    val tokenUrl = HttpUrl.Builder()
-      .scheme("https")
-      .host("little-views-argue.loca.lt")
-      .addPathSegment("getToken")
-      .addQueryParameter("roomName", groupId)
-      .addQueryParameter("identity", Recipient.self().aci.toString())
-      .build()
-
-    val request = Request.Builder()
-      .url(tokenUrl)
-      .build()
-
-    val response: String = client.newCall(request).execute().use { response ->
-      if (!response.isSuccessful || response.body == null) {
-        throw IOException("Failed to fetch LiveKit token")
-      }
-
-      response.body!!.string()
-    }
-
-    val (url, token) = JsonUtils.fromJson(response, TokenResponse::class.java)
+    val (url, token) = getRoomToken()
 
     runBlocking {
       room.connect(url = url, token = token)
     }
-
-    startRecording()
 
     scope.launch {
       launch {
         player.start()
       }
 
-      launch {
+//      launch {
 //        while (isActive) {
 //          try {
 //            if (room.state == Room.State.CONNECTED) {
@@ -126,53 +102,19 @@ class FheGroupCall(val context: Context, val groupId: String) {
 //
 //          delay(5000)
 //        }
-      }
+//      }
 
       room.events.collect { event ->
         if (event is RoomEvent.DataReceived && event.topic == "audio") {
-          Log.d(TAG, "Received audio data ${event.data.size}")
+          Log.d(TAG, "Received audio data")
 
-          try {
-            val packet = event.data
-
-            val buffer = ByteBuffer.wrap(packet).order(ByteOrder.LITTLE_ENDIAN)
-            val metaLen = buffer.int
-
-            val metaBytes = packet.copyOfRange(4, 4 + metaLen)
-            val jsonString = metaBytes.toString(Charsets.UTF_8)
-
-            val json = Json { ignoreUnknownKeys = true }
-            val metadata = json.decodeFromString(AudioMetaData.serializer(), jsonString)
-
-            Log.i(TAG, "metadata ${metadata}")
-
-            val payload = packet.copyOfRange(4 + metaLen, packet.size)
-
-            Log.i(TAG, "payload size ${payload.size}")
-
-            player.enqueue(
-              FHEService.decrypt(payload),
-              metadata.sampleRate,
-              metadata.channels
-            )
-          } catch (e: Exception ) {
-            Log.e(TAG, e.message)
-          }
+          onAudioData(event.data)
         }
 
         if (event is RoomEvent.DataReceived && event.topic == "system") {
           Log.d(TAG, "Received system data ${event.data.size}")
 
-          val jsonString = event.data.toString(Charsets.UTF_8)
-          val json = Json { ignoreUnknownKeys = true }
-
-          val ackMessage = json.decodeFromString(MixerAckMessage.serializer(), jsonString)
-
-          Log.d(TAG, "ackMessage ${ackMessage}")
-
-          if (ackMessage.success) {
-            mixerHandshakeDone = true
-          }
+          onSystemData(event.data)
         }
 
         if (event is RoomEvent.Connected) {
@@ -201,37 +143,6 @@ class FheGroupCall(val context: Context, val groupId: String) {
     }
   }
 
-  private fun requireMixer(): Participant.Identity
-  {
-    val mixer = room.remoteParticipants.keys.firstOrNull { it.value.startsWith("mixer") }!!
-
-//    Log.d(TAG, "mixer: $mixer")
-
-    return mixer
-  }
-
-  private fun mixerConnected(): Boolean
-  {
-    val connected = room.remoteParticipants.keys.any { it.value.startsWith("mixer") }
-
-//    Log.d(TAG, "mixerConnected: $connected")
-
-    return connected
-  }
-
-
-  private fun startRecording()
-  {
-    scope.launch {
-      recorder.start { audioFrame -> sendAudioFrame(audioFrame) }
-    }
-  }
-
-  private fun stopRecording()
-  {
-    recorder.stop()
-  }
-
   fun setOutgoingAudioMuted(muted: Boolean)
   {
     Log.i(TAG, "setOutgoingAudioMuted $muted")
@@ -248,7 +159,100 @@ class FheGroupCall(val context: Context, val groupId: String) {
     room.disconnect()
   }
 
-  suspend fun sendSystemPacket() {
+  private fun getRoomToken(): TokenResponse
+  {
+    val client = OkHttpClient()
+
+    val tokenUrl = HttpUrl.Builder()
+      .scheme("https")
+      .host("little-views-argue.loca.lt")
+      .addPathSegment("getToken")
+      .addQueryParameter("roomName", groupId)
+      .addQueryParameter("identity", Recipient.self().aci.toString())
+      .build()
+
+    val request = Request.Builder()
+      .url(tokenUrl)
+      .build()
+
+    val response: String = client.newCall(request).execute().use { response ->
+      if (!response.isSuccessful) {
+        throw IOException("Failed to fetch LiveKit token")
+      }
+
+      response.body.string()
+    }
+
+    return JsonUtils.fromJson(response, TokenResponse::class.java)
+  }
+
+  private fun requireMixer(): Participant.Identity
+  {
+    return room.remoteParticipants.keys.firstOrNull { it.value.startsWith("mixer") }!!
+  }
+
+  private fun mixerConnected(): Boolean
+  {
+    return room.remoteParticipants.keys.any { it.value.startsWith("mixer") }
+  }
+
+  private fun onSystemData(data: ByteArray)
+  {
+    val jsonString = data.toString(Charsets.UTF_8)
+    val json = Json { ignoreUnknownKeys = true }
+
+    val ackMessage = json.decodeFromString(MixerAckMessage.serializer(), jsonString)
+
+    Log.d(TAG, "ackMessage ${ackMessage}")
+
+    if (ackMessage.success) {
+      mixerHandshakeDone = true
+
+      startRecording()
+    }
+  }
+
+  private fun onAudioData(data: ByteArray)
+  {
+    try {
+      val buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN)
+      val metaLen = buffer.int
+
+      val metaBytes = data.copyOfRange(4, 4 + metaLen)
+      val jsonString = metaBytes.toString(Charsets.UTF_8)
+
+      val json = Json { ignoreUnknownKeys = true }
+      val metadata = json.decodeFromString(AudioMetaData.serializer(), jsonString)
+
+      Log.i(TAG, "metadata ${metadata}")
+
+      val payload = data.copyOfRange(4 + metaLen, data.size)
+
+      Log.i(TAG, "payload size ${payload.size}")
+
+      player.enqueue(
+        FHEService.decrypt(payload),
+        metadata.sampleRate,
+        metadata.channels
+      )
+    } catch (e: Exception ) {
+      Log.e(TAG, e.message)
+    }
+  }
+
+  private fun startRecording()
+  {
+    scope.launch {
+      recorder.start { audioFrame -> sendAudioFrame(audioFrame) }
+    }
+  }
+
+  private fun stopRecording()
+  {
+    recorder.stop()
+  }
+
+  private suspend fun sendSystemPacket() {
     val pubKey = context.assets.open("keys/key_pub.bin").use { input ->
       input.readBytes()
     }
@@ -297,18 +301,10 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
       offset += maxChunkBytes
     }
-
-  }
-
-  private fun floatsToBytes(src: FloatArray): ByteArray {
-    val bb = ByteBuffer.allocate(src.size * 4).order(ByteOrder.LITTLE_ENDIAN)
-    bb.asFloatBuffer().put(src, 0, src.size)
-    return bb.array()
   }
 
   suspend fun sendAudioFrame(audioFrame: FloatArray) {
     val encryptedFrame = FHEService.encrypt(audioFrame)
-//    val encryptedFrame = floatsToBytes(pcm);
 
     // Livekit has 15KiB max data packet size
     val maxChunkBytes = 14000

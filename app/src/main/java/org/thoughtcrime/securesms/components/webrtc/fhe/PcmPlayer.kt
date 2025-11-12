@@ -59,16 +59,14 @@ class PcmPlayer {
       it.release()
     }
 
-    val minBuf = AudioTrack.getMinBufferSize(
+    val bufferSize = AudioTrack.getMinBufferSize(
       meta.sampleRate, chOut, AudioFormat.ENCODING_PCM_FLOAT
-    )
-
-    val bufferSize = max(minBuf, meta.sampleRate / 1000 * 90 * meta.channels * 4 * 2)
+    ).coerceAtLeast(meta.sampleRate * meta.channels * 4)
 
     track = AudioTrack.Builder()
       .setAudioAttributes(
         AudioAttributes.Builder()
-          .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+          .setUsage(AudioAttributes.USAGE_MEDIA)
           .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
           .build()
       )

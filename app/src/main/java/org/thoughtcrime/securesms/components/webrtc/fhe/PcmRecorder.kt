@@ -5,11 +5,10 @@
 
 package org.thoughtcrime.securesms.components.webrtc.fhe
 
+import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.Build
-import androidx.annotation.RequiresApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
@@ -22,13 +21,15 @@ class PcmRecorder(
   val channels: Int,
   val frameDurationMs: Int
 ) {
-  private val TAG: String = Log.tag(PcmRecorder::class.java)
+  companion object {
+    private val TAG: String = Log.tag(PcmRecorder::class.java)
+  }
 
   private var record: AudioRecord? = null
 
   private var job: Job? = null
 
-  @RequiresApi(Build.VERSION_CODES.M)
+  @SuppressLint("MissingPermission")
   suspend fun start(onAudioFrame: suspend (FloatArray) -> Unit) = coroutineScope {
     stop()
 
@@ -59,8 +60,6 @@ class PcmRecorder(
     job = launch {
       while (isActive) {
         val totalRead = record!!.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
-
-//        Log.d(TAG, "AudioRecord read $totalRead bytes")
 
         if (totalRead > 0) {
           onAudioFrame(buf)

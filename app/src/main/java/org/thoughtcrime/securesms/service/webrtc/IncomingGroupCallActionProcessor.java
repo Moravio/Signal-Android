@@ -226,7 +226,7 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
     try {
       groupCall.setOutgoingVideoSource(currentState.getVideoState().requireLocalSink(), currentState.getVideoState().requireCamera());
       groupCall.setOutgoingVideoMuted(answerWithVideo);
-      groupCall.setOutgoingAudioMuted(!currentState.getLocalDeviceState().isMicrophoneEnabled());
+      groupCall.setOutgoingAudioMuted(true);
       groupCall.setDataMode(NetworkUtil.getCallingDataMode(context, groupCall.getLocalDeviceState().getNetworkRoute().getLocalAdapterType()));
 
       groupCall.join();
