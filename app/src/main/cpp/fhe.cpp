@@ -162,10 +162,10 @@ jbyteArray encrypt(JNIEnv* env, jclass clazz, jfloatArray inputData)
     jfloat* bytes = env->GetFloatArrayElements(inputData, nullptr);
 
     std::vector<float> cppVector;
-    cppVector.reserve(length / sizeof(float));
-    const float* floatData = reinterpret_cast<const float*>(bytes);
+    cppVector.reserve(length);
+    const auto* floatData = reinterpret_cast<const float*>(bytes);
 
-    for (jsize i = 0; i < length / sizeof(float); ++i) {
+    for (jsize i = 0; i < length; ++i) {
         cppVector.push_back(floatData[i]);
     }
 
