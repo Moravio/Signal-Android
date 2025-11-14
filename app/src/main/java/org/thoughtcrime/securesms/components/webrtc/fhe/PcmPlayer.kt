@@ -1,15 +1,22 @@
 package org.thoughtcrime.securesms.components.webrtc.fhe
 
-import android.annotation.SuppressLint
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import kotlinx.coroutines.*
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.math.max
+import org.signal.core.util.logging.Log
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 
 class PcmPlayer {
-  private val queue = LinkedBlockingQueue<Pair<FloatArray, Meta>>()
+  companion object {
+    private val TAG: String = Log.tag(PcmPlayer::class.java)
+  }
+
+  private val channel = Channel<Pair<FloatArray, Meta>>(
+    capacity = 10,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+  )
 
   private var track: AudioTrack? = null
 
@@ -17,18 +24,25 @@ class PcmPlayer {
 
   data class Meta(val sampleRate: Int, val channels: Int)
 
-  @SuppressLint("NewApi")
   suspend fun start() = coroutineScope {
+    Log.i(TAG, "Starting player")
+
     job = launch {
-      while (isActive) {
-        val (pcm, meta) = queue.take()
-        ensureTrack(meta)
-        track?.write(pcm, 0, pcm.size, AudioTrack.WRITE_BLOCKING)
+      try {
+        for ((audioData, meta) in channel) {
+          ensureTrack(meta)
+
+          track?.write(audioData, 0, audioData.size, AudioTrack.WRITE_BLOCKING)
+        }
+      } finally {
+        stop()
       }
     }
   }
 
   fun stop() {
+    Log.i(TAG, "Stopping player")
+
     job?.cancel()
     job = null
     track?.let {
@@ -36,16 +50,16 @@ class PcmPlayer {
       it.release()
     }
     track = null
-    queue.clear()
+
+    channel.close()
   }
 
   fun enqueue(audioData: FloatArray, sampleRate: Int, channels: Int) {
-    queue.offer(audioData to Meta(sampleRate, channels))
+    channel.trySend(audioData to Meta(sampleRate, channels))
   }
 
-  @SuppressLint("NewApi")
   private fun ensureTrack(meta: Meta) {
-    val chOut = if (meta.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO
+    val channelConfig = if (meta.channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO
 
     val existing = track
     val needsNew = existing == null ||
@@ -60,13 +74,13 @@ class PcmPlayer {
     }
 
     val bufferSize = AudioTrack.getMinBufferSize(
-      meta.sampleRate, chOut, AudioFormat.ENCODING_PCM_FLOAT
-    ).coerceAtLeast(meta.sampleRate * meta.channels * 4)
+      meta.sampleRate, channelConfig, AudioFormat.ENCODING_PCM_FLOAT
+    )
 
     track = AudioTrack.Builder()
       .setAudioAttributes(
         AudioAttributes.Builder()
-          .setUsage(AudioAttributes.USAGE_MEDIA)
+          .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
           .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
           .build()
       )
@@ -74,7 +88,7 @@ class PcmPlayer {
         AudioFormat.Builder()
           .setSampleRate(meta.sampleRate)
           .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-          .setChannelMask(chOut)
+          .setChannelMask(channelConfig)
           .build()
       )
       .setTransferMode(AudioTrack.MODE_STREAM)

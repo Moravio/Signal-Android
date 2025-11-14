@@ -19,7 +19,7 @@ import kotlin.math.max
 class PcmRecorder(
   val sampleRate: Int,
   val channels: Int,
-  val frameDurationMs: Int
+  val samplesPerFrame: Int
 ) {
   companion object {
     private val TAG: String = Log.tag(PcmRecorder::class.java)
@@ -39,14 +39,13 @@ class PcmRecorder(
       sampleRate, channelConfig, AudioFormat.ENCODING_PCM_FLOAT
     )
 
-    val samplesPerFrame = sampleRate / 1000 * frameDurationMs
     val bytesPerFrame = samplesPerFrame * channels * 4
-    val bufferSize = max(minBuf, bytesPerFrame * 2)
+    val bufferSize = max(minBuf, bytesPerFrame)
 
-    Log.i(TAG, "Starting audio record [bufferSizeInBytes=${bytesPerFrame}]")
+    Log.i(TAG, "Starting audio record [bufferSize=${bufferSize}]")
 
     record = AudioRecord(
-      MediaRecorder.AudioSource.MIC,
+      MediaRecorder.AudioSource.VOICE_COMMUNICATION,
       sampleRate,
       channelConfig,
       AudioFormat.ENCODING_PCM_FLOAT,
@@ -55,20 +54,26 @@ class PcmRecorder(
 
     record?.startRecording()
 
-    val buf = FloatArray(samplesPerFrame)
+    val buf = FloatArray(bufferSize / 4)
 
     job = launch {
-      while (isActive) {
-        val totalRead = record!!.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
+      try {
+        while (isActive) {
+          val totalRead = record!!.read(buf, 0, buf.size, AudioRecord.READ_BLOCKING)
 
-        if (totalRead > 0) {
-          onAudioFrame(buf)
+          if (totalRead > 0) {
+            onAudioFrame(if (totalRead == buf.size) buf else buf.copyOf(totalRead))
+          }
         }
+      } finally {
+        stop()
       }
     }
   }
 
   fun stop() {
+    Log.i(TAG, "stop called")
+
     job?.cancel()
     record?.run {
       try { stop() } catch (_: Throwable) {}

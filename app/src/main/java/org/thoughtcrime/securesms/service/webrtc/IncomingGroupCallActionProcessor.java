@@ -195,8 +195,6 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "RingRTC did not create a group call", null);
     }
 
-    var fheGroupCall = new FheGroupCall(context, Hex.toStringCondensed(groupId));
-
     try {
       groupCall.setOutgoingAudioMuted(true);
       groupCall.setOutgoingVideoMuted(true);
@@ -207,6 +205,8 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
     } catch (CallException e) {
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
+
+    var fheGroupCall = new FheGroupCall(context, Hex.toStringCondensed(groupId));
 
     currentState = currentState.builder()
                                .changeCallInfoState()
@@ -226,6 +226,7 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
     try {
       groupCall.setOutgoingVideoSource(currentState.getVideoState().requireLocalSink(), currentState.getVideoState().requireCamera());
       groupCall.setOutgoingVideoMuted(answerWithVideo);
+//      groupCall.setOutgoingAudioMuted(!currentState.getLocalDeviceState().isMicrophoneEnabled());
       groupCall.setOutgoingAudioMuted(true);
       groupCall.setDataMode(NetworkUtil.getCallingDataMode(context, groupCall.getLocalDeviceState().getNetworkRoute().getLocalAdapterType()));
 
@@ -234,6 +235,7 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "Unable to join group call", e);
     }
 
+    fheGroupCall.setOutgoingAudioMuted(!currentState.getLocalDeviceState().isMicrophoneEnabled());
     fheGroupCall.connect();
 
     return currentState.builder()

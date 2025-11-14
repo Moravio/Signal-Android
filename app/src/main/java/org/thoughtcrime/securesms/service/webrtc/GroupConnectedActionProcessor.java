@@ -111,6 +111,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
   @Override
   protected @NonNull WebRtcServiceState handleSetMuteAudio(@NonNull WebRtcServiceState currentState, boolean muted) {
     try {
+//      currentState.getCallInfoState().requireGroupCall().setOutgoingAudioMuted(muted);
       currentState.getCallInfoState().requireGroupCall().setOutgoingAudioMuted(true);
     } catch (CallException e) {
       return groupCallFailure(currentState, "Unable to set audio muted", e);

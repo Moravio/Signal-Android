@@ -176,6 +176,7 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
     try {
       groupCall.setOutgoingVideoSource(currentState.getVideoState().requireLocalSink(), currentState.getVideoState().requireCamera());
       groupCall.setOutgoingVideoMuted(!currentState.getLocalDeviceState().getCameraState().isEnabled());
+//      groupCall.setOutgoingAudioMuted(!currentState.getLocalDeviceState().isMicrophoneEnabled());
       groupCall.setOutgoingAudioMuted(true);
       groupCall.setDataMode(NetworkUtil.getCallingDataMode(context, groupCall.getLocalDeviceState().getNetworkRoute().getLocalAdapterType()));
 
@@ -185,7 +186,7 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
     }
 
     var fheGroupCall = currentState.getCallInfoState().requireFheGroupCall();
-
+    fheGroupCall.setOutgoingAudioMuted(!currentState.getLocalDeviceState().getCameraState().isEnabled());
     fheGroupCall.connect();
 
     return currentState.builder()
