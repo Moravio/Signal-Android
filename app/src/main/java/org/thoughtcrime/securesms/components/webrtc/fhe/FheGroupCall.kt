@@ -6,6 +6,7 @@
 package org.thoughtcrime.securesms.components.webrtc.fhe
 
 import android.content.Context
+import io.livekit.android.ConnectOptions
 import io.livekit.android.LiveKit
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
@@ -95,7 +96,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
     val (url, token) = getRoomToken()
 
     runBlocking {
-      room.connect(url = url, token = token)
+      room.connect(url = url, token = token, ConnectOptions(audio = false, video = false))
     }
 
     Log.i(TAG, "Connected to Room [roomName=$groupId]")
