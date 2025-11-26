@@ -174,8 +174,8 @@ public class CallParticipantView extends ConstraintLayout {
         renderer.attachBroadcastVideoSink(null);
       }
 
-      audioIndicator.setVisibility(View.VISIBLE);
-      audioIndicator.bind(participant.isMicrophoneEnabled(), participant.getAudioLevel());
+      audioIndicator.setVisibility(View.GONE);
+//      audioIndicator.bind(participant.isMicrophoneEnabled(), participant.getAudioLevel());
       final String shortRecipientDisplayName = participant.getShortRecipientDisplayName(getContext());
       if (raiseHandAllowed && participant.isHandRaised()) {
         raiseHandIcon.setVisibility(View.VISIBLE);

@@ -23,10 +23,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.signal.core.util.logging.Log
+import org.thoughtcrime.securesms.BuildConfig
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.util.JsonUtils
 import java.io.IOException
@@ -62,7 +63,13 @@ class FheGroupCall(val context: Context, val groupId: String) {
 
   @Volatile private var mixerHandshakeDone = false
 
-  data class TokenResponse(val url: String, val token: String)
+  @Serializable
+  data class ConnectionDetailsRequest(
+    val roomName: String,
+    val participantName: String,
+  )
+
+  data class TokenResponse(val serverUrl: String, val participantToken: String)
 
   data class LocalDeviceState(
     var audioMuted: Boolean
@@ -93,10 +100,10 @@ class FheGroupCall(val context: Context, val groupId: String) {
   {
     Log.i(TAG, "Connecting to LiveKit [roomName=$groupId]")
 
-    val (url, token) = getRoomToken()
+    val (serverUrl, participantToken) = getRoomToken()
 
     runBlocking {
-      room.connect(url = url, token = token, ConnectOptions(audio = false, video = false))
+      room.connect(url = serverUrl, token = participantToken, ConnectOptions(audio = false, video = false))
     }
 
     Log.i(TAG, "Connected to Room [roomName=$groupId]")
@@ -174,16 +181,20 @@ class FheGroupCall(val context: Context, val groupId: String) {
   {
     val client = OkHttpClient()
 
-    val tokenUrl = HttpUrl.Builder()
-      .scheme("https")
-      .host("slimy-buses-arrive.loca.lt")
-      .addPathSegment("getToken")
-      .addQueryParameter("roomName", groupId)
-      .addQueryParameter("identity", Recipient.self().aci.toString())
-      .build()
+    val requestPayload = ConnectionDetailsRequest(
+      roomName = groupId,
+      participantName = Recipient.self().aci.toString()
+    )
+
+    val jsonSerializer = Json { encodeDefaults = true }
+    val jsonString = jsonSerializer.encodeToString(requestPayload)
+    val requestBody = jsonString.toRequestBody()
 
     val request = Request.Builder()
-      .url(tokenUrl)
+      .url(BuildConfig.LIVEKIT_TOKEN_URL)
+      .addHeader("X-Sandbox-ID", BuildConfig.LIVEKIT_TOKEN_SANDBOX_ID)
+      .addHeader("Content-Type", "application/json")
+      .post(requestBody)
       .build()
 
     val response: String = client.newCall(request).execute().use { response ->

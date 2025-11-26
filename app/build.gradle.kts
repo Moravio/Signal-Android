@@ -241,6 +241,9 @@ android {
     buildConfigField("boolean", "TRACING_ENABLED", "false")
     buildConfigField("boolean", "LINK_DEVICE_UX_ENABLED", "false")
 
+    buildConfigField("String", "LIVEKIT_TOKEN_URL", "\"https://cloud-api.livekit.io/api/sandbox/connection-details\"")
+    buildConfigField("String", "LIVEKIT_TOKEN_SANDBOX_ID", "\"unset\"")
+
     ndk {
       abiFilters += listOf("arm64-v8a")
 //      abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
