@@ -138,7 +138,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
     }
 
     for (Map.Entry<CallParticipantId, CallParticipant> entry : participants.entrySet()) {
-      if (entry.getKey().getDemuxId() == sourceDemuxId) {
+      if (entry.getKey().demuxId == sourceDemuxId) {
         try {
           groupCall.setOutgoingAudioMutedRemotely(sourceDemuxId);
         } catch (CallException e) {
@@ -167,7 +167,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
       source = Recipient.self();
     } else {
       for (Map.Entry<CallParticipantId, CallParticipant> entry : participants.entrySet()) {
-        if (entry.getKey().getDemuxId() == sourceDemuxId) {
+        if (entry.getKey().demuxId == sourceDemuxId) {
           source = entry.getValue().getRecipient();
         }
       }
@@ -178,7 +178,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
     }
 
     for (Map.Entry<CallParticipantId, CallParticipant> entry : participants.entrySet()) {
-      if (entry.getKey().getDemuxId() == targetDemuxId) {
+      if (entry.getKey().demuxId == targetDemuxId) {
         WebRtcServiceStateBuilder.CallInfoStateBuilder builder = currentState.builder().changeCallInfoState().putParticipant(entry.getKey(), entry.getValue().withRemotelyMutedBy(source));
         return builder.build();
       }
@@ -199,7 +199,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
       CallParticipantId callParticipantId = participant.getCallParticipantId();
 
       if (remoteDeviceStates != null) {
-        GroupCall.RemoteDeviceState state = remoteDeviceStates.get(callParticipantId.getDemuxId());
+        GroupCall.RemoteDeviceState state = remoteDeviceStates.get(callParticipantId.demuxId);
         if (state != null) {
           remoteAudioLevels.put(callParticipantId, CallParticipant.AudioLevel.fromRawAudioLevel(state.getAudioLevel()));
         }
@@ -315,7 +315,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
 
   @Nullable
   private GroupCallReactionEvent createGroupCallReaction(Collection<CallParticipant> participants, final GroupCall.Reaction reaction) {
-    CallParticipant participant = participants.stream().filter(it -> it.getCallParticipantId().getDemuxId() == reaction.demuxId).findFirst().orElse(null);
+    CallParticipant participant = participants.stream().filter(it -> it.getCallParticipantId().demuxId == reaction.demuxId).findFirst().orElse(null);
     if (participant == null) {
       Log.v(TAG, "Could not find CallParticipantId in list of call participants based on demuxId for reaction.");
       return null;
@@ -336,7 +336,7 @@ public class GroupConnectedActionProcessor extends GroupActionProcessor {
     List<CallParticipant> participants = currentState.getCallInfoState().getRemoteCallParticipants();
 
     for (CallParticipant updatedParticipant : participants) {
-      int raisedHandIndex = raisedHands.indexOf(updatedParticipant.getCallParticipantId().getDemuxId());
+      int raisedHandIndex = raisedHands.indexOf(updatedParticipant.getCallParticipantId().demuxId);
       boolean wasHandAlreadyRaised  = updatedParticipant.isHandRaised();
 
       if (wasHandAlreadyRaised) {

@@ -273,7 +273,6 @@ import org.thoughtcrime.securesms.linkpreview.LinkPreviewViewModelV2
 import org.thoughtcrime.securesms.longmessage.LongMessageFragment
 import org.thoughtcrime.securesms.main.MainNavigationListLocation
 import org.thoughtcrime.securesms.main.MainNavigationViewModel
-import org.thoughtcrime.securesms.main.VerticalInsets
 import org.thoughtcrime.securesms.mediaoverview.MediaOverviewActivity
 import org.thoughtcrime.securesms.mediapreview.MediaIntentFactory
 import org.thoughtcrime.securesms.mediapreview.MediaPreviewV2Activity
@@ -414,6 +413,9 @@ class ConversationFragment :
     private const val SCROLL_HEADER_ANIMATION_DURATION: Long = 100L
     private const val SCROLL_HEADER_CLOSE_DELAY: Long = SCROLL_HEADER_ANIMATION_DURATION * 4
     private const val IS_SCROLLED_TO_BOTTOM_THRESHOLD: Int = 2
+
+    private const val ATTACHMENT_KEYBOARD_FRAGMENT_CREATOR_ID = 1
+    private const val MEDIA_KEYBOARD_FRAGMENT_CREATOR_ID = 2
   }
 
   private val args: ConversationArgs by lazy {
@@ -623,15 +625,10 @@ class ConversationFragment :
     SignalLocalMetrics.ConversationOpen.start()
   }
 
-  fun applyRootInsets(insets: VerticalInsets) {
-    binding.root.applyInsets(insets)
-  }
-
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     binding.toolbar.isBackInvokedCallbackEnabled = false
 
-    binding.root.setApplyRootInsets(!isLargeScreenSupportEnabled())
-    binding.root.setUseWindowTypes(!isLargeScreenSupportEnabled())
+    binding.root.setUseWindowTypes(args.conversationScreenType == ConversationScreenType.NORMAL && !resources.getWindowSizeClass().isSplitPane())
 
     disposables.bindTo(viewLifecycleOwner)
 
@@ -1241,7 +1238,9 @@ class ConversationFragment :
         .state
         .distinctUntilChanged { previous, next -> previous.voiceNoteDraft == next.voiceNoteDraft }
         .subscribe {
-          inputPanel.voiceNoteDraft = it.voiceNoteDraft
+          if (!voiceMessageRecordingDelegate.hasActiveSession()) {
+            inputPanel.voiceNoteDraft = it.voiceNoteDraft
+          }
           updateToggleButtonState()
         }
     )
@@ -2327,14 +2326,17 @@ class ConversationFragment :
 
     val additionalScrollOffset = 54.dp
     if (isVisible) {
-      bottomActionBar.visibility = View.INVISIBLE
+      ViewUtil.animateIn(bottomActionBar, bottomActionBar.enterAnimation)
       animationsAllowed = false
 
       bottomActionBar.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
         override fun onGlobalLayout() {
+          if (bottomActionBar.measuredHeight == 0) {
+            return
+          }
+
           bottomActionBar.viewTreeObserver.removeOnGlobalLayoutListener(this)
 
-          ViewUtil.animateIn(bottomActionBar, bottomActionBar.enterAnimation)
           container.hideInput()
           inputPanel.setHideForSelection(true)
 
@@ -2821,6 +2823,11 @@ class ConversationFragment :
     invalidateOptionsMenu()
   }
 
+  private fun scrollToBottom() {
+    layoutManager.scrollToPositionWithOffset(0, 0)
+    scrollListener?.onScrolled(binding.conversationItemRecycler, 0, 0)
+  }
+
   /**
    * Controls animation and visibility of the scrollDateHeader.
    */
@@ -2920,8 +2927,7 @@ class ConversationFragment :
   private inner class DataObserver : RecyclerView.AdapterDataObserver() {
     override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
       if (positionStart == 0 && shouldScrollToBottom()) {
-        layoutManager.scrollToPositionWithOffset(0, 0)
-        scrollListener?.onScrolled(binding.conversationItemRecycler, 0, 0)
+        scrollToBottom()
       }
     }
 
@@ -4373,9 +4379,6 @@ class ConversationFragment :
     }
 
     override fun onRecorderCanceled(byUser: Boolean) {
-      if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
-        updateToggleButtonState()
-      }
       voiceMessageRecordingDelegate.onRecorderCanceled(byUser)
     }
 
@@ -4516,7 +4519,7 @@ class ConversationFragment :
   }
 
   private object AttachmentKeyboardFragmentCreator : InputAwareConstraintLayout.FragmentCreator {
-    override val id: Int = 1
+    override val id: Int = ATTACHMENT_KEYBOARD_FRAGMENT_CREATOR_ID
     override fun create(): Fragment = AttachmentKeyboardFragment()
   }
 
@@ -4538,6 +4541,7 @@ class ConversationFragment :
               toast(R.string.AttachmentManager_cant_open_media_selection, Toast.LENGTH_LONG)
             }
           }
+
           AttachmentKeyboardButton.POLL -> {
             CreatePollFragment.show(childFragmentManager)
             childFragmentManager.setFragmentResultListener(CreatePollFragment.REQUEST_KEY, requireActivity()) { _, bundle ->
@@ -4554,7 +4558,7 @@ class ConversationFragment :
   }
 
   private object MediaKeyboardFragmentCreator : InputAwareConstraintLayout.FragmentCreator {
-    override val id: Int = 2
+    override val id: Int = MEDIA_KEYBOARD_FRAGMENT_CREATOR_ID
     override fun create(): Fragment = KeyboardPagerFragment().apply {
       arguments = bundleOf(KeyboardPagerFragment.ARG_SET_NAV_COLOR to false)
     }
@@ -4564,8 +4568,23 @@ class ConversationFragment :
     InputAwareConstraintLayout.Listener,
     InsetAwareConstraintLayout.KeyboardStateListener {
 
-    override fun onInputShown() {
-      binding.navBar.setBackgroundColor(ThemeUtil.getThemedColor(requireContext(), R.attr.mediaKeyboardBottomBarBackgroundColor))
+    override fun onInputShown(fragmentCreatorId: Int) {
+      when (fragmentCreatorId) {
+        ATTACHMENT_KEYBOARD_FRAGMENT_CREATOR_ID -> {
+          if (viewModel.recipientSnapshot?.wallpaper != null) {
+            binding.navBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.wallpaper_compose_background))
+          } else {
+            binding.navBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.signal_background_primary))
+          }
+        }
+        MEDIA_KEYBOARD_FRAGMENT_CREATOR_ID -> {
+          binding.navBar.setBackgroundColor(ThemeUtil.getThemedColor(requireContext(), R.attr.mediaKeyboardBottomBarBackgroundColor))
+        }
+        else -> {
+          Log.w(TAG, "Not setting navbar coloring for unknown creator id $fragmentCreatorId")
+        }
+      }
+
       viewModel.setIsMediaKeyboardShowing(true)
     }
 

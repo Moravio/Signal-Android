@@ -64,7 +64,6 @@ import org.signal.core.util.toSingleLine
 import org.signal.core.util.update
 import org.signal.core.util.withinTransaction
 import org.signal.libsignal.protocol.IdentityKey
-import org.signal.libsignal.protocol.util.Pair
 import org.thoughtcrime.securesms.attachments.Attachment
 import org.thoughtcrime.securesms.attachments.AttachmentId
 import org.thoughtcrime.securesms.attachments.DatabaseAttachment
@@ -2229,6 +2228,7 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       reactions.deleteReactions(MessageId(messageId))
       deleteGroupStoryReplies(messageId)
       disassociateStoryQuotes(messageId)
+      polls.deletePoll(messageId)
       disassociatePollFromPollTerminate(polls.getPollTerminateMessageId(messageId))
 
       val threadId = getThreadIdForMessage(messageId)
@@ -2834,6 +2834,8 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       contentValues.put(NOTIFIED, notified.toInt())
     }
 
+    val updateThread = retrieved.storyType === StoryType.NONE && !silent
+
     val (messageId, insertedAttachments) = insertMediaMessage(
       threadId = threadId,
       body = retrieved.body,
@@ -2845,7 +2847,7 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
       messageRanges = retrieved.messageRanges,
       contentValues = contentValues,
       insertListener = null,
-      updateThread = retrieved.storyType === StoryType.NONE && !silent,
+      updateThread = updateThread,
       unarchive = true,
       poll = retrieved.poll,
       pollTerminate = retrieved.messageExtras?.pollTerminate
@@ -2882,7 +2884,8 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
 
     val isNotStoryGroupReply = retrieved.parentStoryId == null || !retrieved.parentStoryId.isGroupReply()
 
-    if (!MessageTypes.isPaymentsActivated(type) &&
+    if (!updateThread &&
+      !MessageTypes.isPaymentsActivated(type) &&
       !MessageTypes.isPaymentsRequestToActivate(type) &&
       !MessageTypes.isReportedSpam(type) &&
       !MessageTypes.isMessageRequestAccepted(type) &&
@@ -4265,7 +4268,7 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
     return readableDatabase
       .select("DISTINCT $THREAD_ID")
       .from(TABLE_NAME)
-      .where("($TYPE & ${MessageTypes.BASE_TYPE_MASK}) = ${MessageTypes.BASE_INBOX_TYPE} AND ($TYPE & ?) != 0", MessageTypes.SPECIAL_TYPE_PAYMENTS_ACTIVATE_REQUEST)
+      .where("($TYPE & ${MessageTypes.BASE_TYPE_MASK}) = ${MessageTypes.BASE_INBOX_TYPE} AND ($TYPE & ${MessageTypes.SPECIAL_TYPES_MASK}) = ${MessageTypes.SPECIAL_TYPE_PAYMENTS_ACTIVATE_REQUEST}")
       .run()
       .readToList { it.requireLong(THREAD_ID) }
   }
@@ -4295,12 +4298,12 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
     do {
       pair = getGroupAddedBy(threadId, lastQuitChecked)
 
-      if (pair.first() != null) {
-        return pair.first()
+      if (pair.first != null) {
+        return pair.first
       } else {
-        lastQuitChecked = pair.second()
+        lastQuitChecked = pair.second
       }
-    } while (pair.second() != -1L)
+    } while (pair.second != -1L)
 
     return null
   }
@@ -4925,7 +4928,7 @@ open class MessageTable(context: Context?, databaseHelper: SignalDatabase) : Dat
     }
 
     for (expiringMessage in expiringMessages) {
-      AppDependencies.expiringMessageManager.scheduleDeletion(expiringMessage.first(), true, proposedExpireStarted, expiringMessage.second())
+      AppDependencies.expiringMessageManager.scheduleDeletion(expiringMessage.first, true, proposedExpireStarted, expiringMessage.second)
     }
 
     for (threadId in updatedThreads) {

@@ -713,11 +713,10 @@
               android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
               android:exported="false"/>
 
-    <activity android:name=".calls.new.NewCallActivity"
-              android:theme="@style/Theme.Signal.DayNight.NoActionBar"
-              android:windowSoftInputMode="stateAlwaysVisible"
-              android:configChanges="touchscreen|keyboard|keyboardHidden|orientation|screenLayout|screenSize"
-              android:exported="false"/>
+    <activity
+            android:name=".calls.new.NewCallActivity"
+            android:exported="false"
+            android:theme="@style/Signal.DayNight.NoActionBar" />
 
     <activity android:name=".PushContactSelectionActivity"
               android:label="@string/AndroidManifest__select_contacts"
@@ -1064,9 +1063,10 @@
               android:theme="@style/Theme.Signal.DayNight.NoActionBar"
               android:exported="false"/>
 
-    <activity android:name=".groups.ui.addmembers.AddMembersActivity"
-              android:theme="@style/Theme.Signal.DayNight.NoActionBar"
-              android:exported="false"/>
+    <activity
+            android:name=".groups.ui.addmembers.AddMembersActivity"
+            android:exported="false"
+            android:theme="@style/Signal.DayNight.NoActionBar" />
 
     <activity android:name=".groups.ui.creategroup.details.AddGroupDetailsActivity"
               android:theme="@style/Theme.Signal.DayNight.NoActionBar"

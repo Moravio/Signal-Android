@@ -239,7 +239,7 @@ class ConversationRepository(
       val results = sendEndPoll(threadRecipient, message, eligibleTargets)
       val sendResults = GroupSendJobHelper.getCompletedSends(eligibleTargets, results)
 
-      if (sendResults.completed.isNotEmpty()) {
+      if (sendResults.completed.isNotEmpty() || possibleTargets.isEmpty()) {
         val allocatedThreadId = SignalDatabase.threads.getOrCreateValidThreadId(threadRecipient, messageRecord.threadId, message.distributionType)
         val outgoingMessage = applyUniversalExpireTimerIfNecessary(applicationContext, threadRecipient, message, allocatedThreadId)
         val insertResult = SignalDatabase.messages.insertMessageOutbox(outgoingMessage, allocatedThreadId, false, null)
@@ -414,7 +414,7 @@ class ConversationRepository(
       if (details == null) {
         -1
       } else {
-        SignalDatabase.messages.getMessagePositionInConversation(threadId, details.second(), details.first())
+        SignalDatabase.messages.getMessagePositionInConversation(threadId, details.second, details.first)
       }
     }.subscribeOn(Schedulers.io())
   }
@@ -737,7 +737,11 @@ class ConversationRepository(
     class DrawableResult(private val drawable: Drawable) : ContactPhotoResult {
       override fun transformToFinalBitmap(): Single<Bitmap> {
         return Single.create {
-          val bitmap = DrawableUtil.wrapBitmapForShortcutInfo(drawable.toBitmap(SHORTCUT_ICON_SIZE, SHORTCUT_ICON_SIZE))
+          val bitmap = if (Build.VERSION.SDK_INT <= 25) {
+            DrawableUtil.wrapBitmapForShortcutInfo(DrawableUtil.toBitmap(drawable, SHORTCUT_ICON_SIZE, SHORTCUT_ICON_SIZE))
+          } else {
+            DrawableUtil.wrapBitmapForShortcutInfo(drawable.toBitmap(SHORTCUT_ICON_SIZE, SHORTCUT_ICON_SIZE))
+          }
           it.setCancellable {
             bitmap.recycle()
           }
