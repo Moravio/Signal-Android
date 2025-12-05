@@ -27,6 +27,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.signal.core.util.logging.Log
+import org.signal.ringrtc.CallException
 import org.thoughtcrime.securesms.BuildConfig
 import org.thoughtcrime.securesms.recipients.Recipient
 import org.thoughtcrime.securesms.util.JsonUtils
@@ -35,7 +36,22 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicInteger
 
-class FheGroupCall(val context: Context, val groupId: String) {
+interface FheEncryptor {
+  @Throws(CallException::class)
+  fun encrypt(input: FloatArray): ByteArray
+}
+
+interface FheDecryptor {
+  @Throws(CallException::class)
+  fun decrypt(input: ByteArray): FloatArray
+}
+
+class FheGroupCall(
+  val context: Context,
+  val groupId: String,
+  val encryptor: FheEncryptor,
+  val decryptor: FheDecryptor,
+) {
   companion object {
     private val TAG: String = Log.tag(FheGroupCall::class.java)
 
@@ -93,7 +109,7 @@ class FheGroupCall(val context: Context, val groupId: String) {
   )
 
   init {
-    FHEService.loadKeys(context.assets)
+//    FHEService.loadKeys(context.assets)
   }
 
   fun connect()
@@ -247,7 +263,8 @@ class FheGroupCall(val context: Context, val groupId: String) {
       val payload = data.copyOfRange(4 + metaLen, data.size)
 
       player.enqueue(
-        FHEService.decrypt(payload),
+//        FHEService.decrypt(payload),
+        decryptor.decrypt(payload),
         metadata.sampleRate,
         metadata.channels
       )
@@ -317,7 +334,8 @@ class FheGroupCall(val context: Context, val groupId: String) {
   }
 
   suspend fun sendAudioFrame(audioFrame: FloatArray) {
-    val encryptedFrame = FHEService.encrypt(audioFrame)
+//    val encryptedFrame = FHEService.encrypt(audioFrame)
+    val encryptedFrame = encryptor.encrypt(audioFrame)
 
     val totalChunks = (encryptedFrame.size + DATA_PACKET_CHUNK_BYTES - 1) / DATA_PACKET_CHUNK_BYTES
     val frameId = frameSeq.getAndIncrement()

@@ -490,12 +490,12 @@ android {
 
   val releaseDir = "$projectDir/src/release/java"
   val debugDir = "$projectDir/src/debug/java"
-  externalNativeBuild {
-    cmake {
-      path = file("src/main/cpp/CMakeLists.txt")
-      version = "3.22.1"
-    }
-  }
+//  externalNativeBuild {
+//    cmake {
+//      path = file("src/main/cpp/CMakeLists.txt")
+//      version = "3.22.1"
+//    }
+//  }
 
   android.buildTypes.configureEach {
     val path = if (name == "release") releaseDir else debugDir

@@ -206,7 +206,12 @@ public final class IncomingGroupCallActionProcessor extends DeviceAwareActionPro
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
-    var fheGroupCall = new FheGroupCall(context, Hex.toStringCondensed(groupId));
+    var fheGroupCall = new FheGroupCall(
+      context,
+      Hex.toStringCondensed(groupId),
+      groupCall::encryptFhe,
+      groupCall::decryptFhe
+    );
 
     currentState = currentState.builder()
                                .changeCallInfoState()

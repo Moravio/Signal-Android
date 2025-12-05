@@ -71,7 +71,12 @@ public class GroupPreJoinActionProcessor extends GroupActionProcessor {
       return groupCallFailure(currentState, "Unable to connect to group call", e);
     }
 
-    var fheGroupCall = new FheGroupCall(context, Hex.toStringCondensed(groupId));
+    var fheGroupCall = new FheGroupCall(
+      context,
+      Hex.toStringCondensed(groupId),
+      groupCall::encryptFhe,
+      groupCall::decryptFhe
+    );
 
     SignalStore.tooltips().markGroupCallingLobbyEntered();
     return currentState.builder()
