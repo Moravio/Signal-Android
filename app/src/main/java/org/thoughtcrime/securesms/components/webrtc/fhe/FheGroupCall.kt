@@ -286,6 +286,7 @@ class FheGroupCall(
   }
 
   private suspend fun sendSystemPacket() {
+    // TODO: Get current FHE public key from RingRTC and keep it up date on rotation
     val pubKey = context.assets.open("keys/key_pub.bin").use { input ->
       input.readBytes()
     }
